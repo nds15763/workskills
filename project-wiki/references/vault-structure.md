@@ -13,7 +13,8 @@
 ├── <业务域>/                     # Layer 2: Wiki（LLM 维护）
 │   ├── README.md                #   域索引（authoritative 入口）
 │   ├── knowledge/
-│   │   └── README.md            #   三色知识索引（3类 × 3色）
+│   │   ├── README.md            #   三色知识索引（3类 × 3色）
+│   │   └── sourcecheck.jsonl    #   可选：claim → Obsidian ref 机器校验记录
 │   ├── <实体页>.md               #   实体页（角色、服务、模块）
 │   ├── <概念页>.md               #   概念页（模式、原则、决策）
 │   └── <对比/综合>.md             #   对比表、综合分析
@@ -120,6 +121,41 @@ authority_level: A.authoritative
 ### 黑知识
 - 已废弃或已被替代的架构结论
 ```
+
+### knowledge/sourcecheck.jsonl（可选引用校验记录）
+
+当某条知识要进入 `locked facts`、路书锚点、Worker Pack 或白知识候选时，建议补一条 SourceCheck 记录。它只保存机器校验字段，不替代 `knowledge/README.md` 的人读索引。
+
+主键：
+
+```text
+业务域文件夹 + #业务标签 + [[功能点]] + claim_id + Obsidian ref
+```
+
+最小字段：
+
+```json
+{
+  "claim_id": "domain.feature.slug",
+  "business_domain": "morph72",
+  "business_tag": "#morph72",
+  "feature_point": "[[Ready推进]]",
+  "claim": "离线玩家不阻塞下一轮，服务端会自动 Ready",
+  "source_ref": {
+    "path": "morph72/小局结算与Ready推进.md",
+    "wikilink": "[[小局结算与Ready推进#^ready-auto-offline]]",
+    "block_id": "^ready-auto-offline",
+    "start_line": 42,
+    "end_line": 45,
+    "start_text": "离线玩家",
+    "end_text": "自动 Ready"
+  },
+  "relation": "support",
+  "confidence": 0.86
+}
+```
+
+`sourcecheck.jsonl` 不是新知识入口；`knowledge/README.md` 仍是 durable knowledge 的统一索引入口。
 
 ### Wiki 页面 Frontmatter
 

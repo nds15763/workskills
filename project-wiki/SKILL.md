@@ -41,6 +41,65 @@ project-wiki 是知识 IO 层：负责把原始资料读进来、搜出来、写
 
 写代码前不是“找到一篇文档就够了”，而是必须确认这份资料在当前任务里属于 baseline、advisory 还是 blocked。
 
+## Obsidian SourceCheck
+
+SourceCheck 是 Obsidian 知识进入黑白灰治理之前的引用校验层。它不另建知识库，只校验 claim 是否能按现有 Obsidian 结构精确指回原文。
+
+主键必须是：
+
+```text
+业务域文件夹 + #业务标签 + [[功能点]] + claim_id + Obsidian ref
+```
+
+不是：
+
+```text
+path + line
+```
+
+`path + line + start_text/end_text` 只能做物理定位；业务域、`#业务`、`[[功能点]]` 才是知识身份。
+
+默认存储位置：
+
+```text
+<业务域>/knowledge/sourcecheck.jsonl
+```
+
+每条 SourceCheck claim 必须先通过：
+
+1. 业务域文件夹存在，且引用页面属于该业务域；跨域引用必须显式标注
+2. 页面有对应 `#业务域` 标签
+3. claim 绑定合法 `[[功能点]]`
+4. `[[功能点]]` 能从业务域 README 或叶子文档反查
+5. Obsidian ref 能解析到页面 / heading / block
+6. 行号不越界，字符串边界存在且唯一
+
+通过 SourceCheck 只说明“引用对得上”，不说明“可以驱动行动”。后者仍必须交给 Curator 判 `knowledge_kind / knowledge_color / authority_level`。详细协议见 `references/obsidian-sourcecheck.md`。
+
+## 长任务知识门禁
+
+project-wiki 不负责执行长任务 Loop；它负责保证每一轮 Loop 的行动依据没有被聊天、旧总结或未确权资料污染。
+
+长任务必须先形成 `Goal Knowledge Pack`：
+
+| 字段 | 要求 |
+|---|---|
+| 目标 | 用户到底要闭合什么，不是要读哪些文档 |
+| 业务域 / 功能点 | 能映射到 vault 目录和 `[[功能点]]` |
+| baseline sources | 可直接驱动行动的白知识 |
+| advisory sources | 只能作为风险、补知识输入或待裁依据的灰知识 |
+| blocked sources | 明确不能进入 Worker Pack 的黑知识 / 旧方案 |
+| open conflicts | 需要 Curator 出 Conflict Verdict 的冲突 |
+| evidence needed | 节点转绿所需代码、测试、日志、文档证据 |
+
+每一轮 Loop 回报后，主 Agent 要问三件事：
+
+1. 本轮是否引入新名词、新来源、新证据或旧知识冲突？
+2. 这些内容是否会改变 roadmap 锚点、Worker Pack、验收证据或转绿条件？
+3. 若会改变，是否已经通过 Curator 写回 wiki / 降权旧知识 / 更新 Knowledge Pack？
+
+如果答案为“会改变但未写回”，该 roadmap 节点不能转绿，只能保持黄或红。Wiki 更新完成后，再由主 Agent 回写 `.canvas` 状态事务。
+
 ### 对话入口协议
 
 每次对话开始时：
@@ -179,6 +238,20 @@ python3 scripts/lint.py --json
 
 **LLM 额外能力**：Lint 不只检查问题——LLM 擅长建议新的问题去调查和新的素材去寻找。
 
+### 操作 4: SourceCheck（引用校验）
+
+用户查询 / Ingest / Knowledge Pack 生成过程中，如果某条结论要作为 `locked facts`、白知识候选、路书锚点或 Worker Pack 依据，必须有可校验的 claim reference。
+
+SourceCheck 检查：
+
+- 业务域文件夹、`#业务域` 标签、`[[功能点]]` 双链是否匹配
+- `wikilink / heading / block_id` 是否可解析
+- `start_line/end_line` 是否越界
+- `start_text/end_text` 是否存在且唯一
+- `relation` 是否为 `support/refute`，`confidence` 是否在 0-1
+
+输出非 `ok` 时，该 claim 不允许进入 `locked facts`；只能作为待修复项、灰知识或 Conflict Verdict 输入。
+
 ## 操作路由
 
 | 触发词 | 操作 | 调用 |
@@ -186,6 +259,7 @@ python3 scripts/lint.py --json
 | 搜索/查找/查询/知识包 | Query | `search.py search \| hit-detect \| knowledge-pack` |
 | 审计/检查/断链/孤儿页 | Lint | `lint.py [--domain] [--json]` |
 | 摄取/导入/处理新素材 | Ingest | 读 `references/ingest-workflow.md`，Curator 执行 |
+| 引用/来源/claim/ref/SourceCheck | SourceCheck | `references/obsidian-sourcecheck.md` |
 | wiki 结构/规范/模板 | Schema | 读 `references/vault-structure.md` |
 
 ## index.md + log.md
@@ -225,6 +299,7 @@ project-wiki 是工具层，Curator 是治理层。
 | knowledge-hit-detect | `search.py hit-detect` |
 | knowledge-curate | Ingest 操作 + `lint.py` 写后验证 |
 | knowledge-link-audit | `lint.py` |
+| claim-source-check | `sourcecheck.jsonl` + `references/obsidian-sourcecheck.md` |
 
 **Curator 读取顺序**：`search.py (Obsidian CLI + 元数据增强) → MCP fallback`
 
@@ -244,6 +319,13 @@ project-wiki 是工具层，Curator 是治理层。
 | KP-05 Knowledge Repair Closed | `lint.py` 确认旧知识已退出索引 + 替代真源已就位 |
 | KP-06 Node Can Turn Green | 所有上述 gate 通过 |
 
+Roadmap 每次 Loop Delta 中的 `knowledge_delta` 都要落到这里判定：
+
+- `无新知识`：只需在 `.canvas` 记录证据索引。
+- `新来源 / 新名词 / 新证据`：先 Query / Ingest，再由 Curator 判色。
+- `旧知识冲突`：触发 Conflict Verdict 或 Repair Loop；旧知识未退出默认上下文前，roadmap 相关节点不能绿。
+- `锚点变更`：主 Agent 先改 `.canvas` 锚点，再让 Curator 回写 wiki 索引，最后重跑 roadmap audit。
+
 ## 多项目支持
 
 所有 CLI 用 `--vault` 参数。已知 vault：
@@ -259,6 +341,8 @@ project-wiki 是工具层，Curator 是治理层。
 - 不要修改 `_sources/` 中的原始素材（不可变层）
 - 不要在 Obsidian 不运行时静默降级到 rg/grep（明确报错）
 - 不要把整份长文档塞进 Knowledge Pack（只放路径和摘要）
+- 不要把只有 `path`、没有业务域 / `#业务域` / `[[功能点]]` / span 的来源当成 claim 证据
+- 不要把 SourceCheck 通过当成白知识；它只证明引用对得上
 - 不要把 gray knowledge 直接写成 locked facts
 - 不要让 black knowledge 进入默认上下文
 - 不要等用户提醒才做知识压缩、索引维护和断链修复

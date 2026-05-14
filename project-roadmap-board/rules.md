@@ -928,6 +928,43 @@ runtime 子链:                 开始解决A → 结束解决A → 问题A
 
 同一个 runtime group 只有一个**外部 owner**（它右侧对应的首环/gate 节点），但 group 内允许多个内部 runtime 父节点继续生横向子链。脚本判定时应区分外部 owner 和内部父节点，避免把“补处理子链”误判成 group 多 owner。
 
+### 规则 5A：Loop 状态事务（绝对同步）
+
+每一次 Loop 回报都必须被主 Agent 压成一个 `Loop Delta`，并作为一次不可拆的 `.canvas` 状态事务写入。路书的目标不是事后总结，而是让用户随时打开 canvas 就能看见任务是怎么被完成的。
+
+`Loop Delta` 最小字段：
+
+| 字段 | 含义 |
+|---|---|
+| `scope` | 当前 spine 节点 / runtime group / runtime 节点 |
+| `event` | `start / complete / block / unblock / discover / repair / rollback` |
+| `state_after` | 回写后的目标颜色：灰 / 黄 / 红 / 绿 |
+| `evidence` | 支撑状态变化的证据；黄/红可记录原因，绿必须有验收证据 |
+| `structure_delta` | 新增节点、插入链条、创建子环、扩 group、升 spine、写 Gate |
+| `knowledge_delta` | 新 KP、Conflict Verdict、Repair Loop、旧知识退出、锚点改写 |
+| `sync_required` | edge color、父节点传播、group label/color/几何、exception/docs 回写 |
+
+状态事务顺序固定：
+
+1. **定位 scope**：先找到当前 workblock group 和被回报的 runtime 节点；没有明确 scope 的回报不能直接落路书。
+2. **结构先行**：发现新任务先插入同 group 横向链；开始处理则同 group 派生子环；只有跨工作块、独立 gate / Worker Pack 或改变 spine 顺序时才升 spine。
+3. **写节点状态与证据**：节点文字只写最小证据索引，不把长日志、长讨论塞进 canvas。
+4. **自底向上传播颜色**：子环 → runtime 节点 → 外部 owner → spine；全绿才绿，全红才红，其余黄。
+5. **同步 edge color**：所有 edge color 必须跟随 `toNode` 的颜色。
+6. **同步 group**：group label 后缀、group color、group 几何必须和 owner 及内部节点一致；新增节点后 group 需要扩到完整包含递归子链。
+7. **跑 audit + 人工清单**：`audit.py` 过 P0 后，再人工检查状态是否与 agent 真实进度一致。
+
+禁止拆事务：
+
+- 只改节点颜色，不补 runtime 链 / 子环 / group。
+- 只在聊天或 Todo 里记录新任务，不插入 `.canvas`。
+- 只改节点文本，不同步 edge color。
+- 父节点变色后不改 group label 状态后缀和 group color。
+- 新增 runtime 节点后不扩大 group，导致 group 不能完整包含 P + runtime + 子链。
+- Worker 已经推进下一步，主 Agent 还没先回写上一轮状态。
+
+如果工具暂时不能自动应用事务，主 Agent 也必须按上述顺序手工修改 `.canvas`；不能把“后面统一整理”作为理由延迟同步。
+
 ### 规则 6：灰色节点不需要环
 
 灰色（无色）节点表示"还没开始处理"，不需要也不应该有 runtime 链。它就是主干或横向链条中一个待处理的节点。只有当它从灰色变成黄色（开始处理）时，才需要派生 runtime 链。
@@ -1212,6 +1249,7 @@ OpenSpec 是设计与任务材料，不是路书的结构真源。核心 OpenSpe
 - [ ] `[人工]` **首环主干被 OpenSpec / tasks / Agent 分工反向决定**（违反路书第一语义：主干只能按完成闭环组织）
 - [ ] `[人工]` **材料/说明节点接入了业务 edge 或参与状态判断**（违反材料/说明节点规则：只能解释来源，不能表示进度）
 - [ ] `[人工]` **路书状态与 Agent 实际进度不一致**（Agent 已推进但路书没更新 — 流程审计）
+- [ ] `[人工]` **Loop Delta 没有作为同一批状态事务落入 `.canvas`**（只改 Todo/聊天/节点文字/颜色，未同步结构、edge、group、传播 — 违反规则 5A）
 - [ ] `[脚本]` 黄色节点没有闭合的 runtime 链（违反规则 3：灰→黄必须补横向工作台）
 - [ ] `[脚本]` runtime 链不闭合（找不到 end→parent 的 bottom→bottom edge）
 - [ ] `[脚本]` 黄/红 runtime 子节点缺少闭合 inner runtime 子环（违反规则 3 递归触发）

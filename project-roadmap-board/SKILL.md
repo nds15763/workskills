@@ -95,6 +95,7 @@ description: >-
 - 路书必须展开到**可验收闭环粒度**：tasks.md checkbox 用来校验 runtime group 是否足够可执行，但不能反向决定首环结构，也不能把每个 checkbox 提升成主干节点（规则 0A）。
 - **灰→黄必须立即创建对应 `工作块:` group 节点 + 横向 runtime 链**（规则 3 + 0K，整个系统最关键的触发规则）：group 必须**完全包含 P 自身 + P 的所有 runtime 节点 + 子链递归到底**。
 - **运行时处理一律横向展开**：事实卡、调查、实现、验证、证据、未决点、Exception 都放在所属 runtime group 内；禁止把运行时细节插回竖向首环主干。
+- **每轮 Loop 必须是一次状态事务**：收到 Worker / Curator / 主 Agent 自查回报后，先把新增任务链、子环、状态变化、证据摘录写进 `.canvas`，再同步 edge color、group label/color、group 几何和父节点颜色传播，最后跑 audit；禁止只改节点文字、只改颜色，或把新增问题留在聊天/Todo 里。
 - **嵌套 group 允许完全包含、禁止部分相交**（规则 0K）：子工作块的 group 可以套在父工作块的 group 里，但两个 group 矩形不能部分相交。
 - **gate 节点必须封到独立 `Gate:` group**（规则 0L）：gate 必须串在 spine 主干上，连接在前任务之后、后任务之前；Gate group 与所有 `工作块:` group 完全分离。
 - 业务事实、功能点索引、冲突裁决、错知识修正由 Knowledge Curator 负责。
@@ -350,13 +351,14 @@ Step 3: 主 Agent 派 Worker
 
 Step 4: Worker 执行
         → 按所属 runtime group 的横向链条顺序推进
-        → 每次状态变化立即上报
+        → 每次状态变化立即上报一个 Loop Delta（节点、状态、证据、是否新增节点/子环、是否触发知识冲突）
         → 发现知识冲突立即上报，不私自裁决
         → 运行时发现新问题，默认先在同一 runtime group 插入灰节点；开始处理时在同 group 派生横向子环；只有跨工作块/独立 gate/独立 Worker Pack/阻塞主干闭环时，主 Agent 才评估升 spine
 
 Step 5: 主 Agent 先回写路书
         → 若本次收到新 Knowledge Pack / Repair Loop 结果 / 未决点驱散，先按规则 0J 对当前 .canvas 做锚点 grep 审计，确定锚点改写/删除和节点回退
-        → 第一件事：把状态变化、锚点审计结果和必要回退写入 .canvas（spine 节点颜色变化必须同步更新 group label 状态后缀和 group color）
+        → 第一件事：把 Loop Delta 作为同一批状态事务写入 .canvas（spine 节点颜色变化必须同步更新 group label 状态后缀和 group color）
+        → 状态事务顺序固定：结构变更（插入节点/创建子环/扩 group）→ 节点状态与证据 → 父节点颜色传播 → edge color → group label/color/几何 → audit
         → 改完跑 audit.py，exit 0 才算脚本通过；同时主 Agent 必须人工 review 审计清单的 [人工] / [半自动] 项
         → 第二件事：如有阻塞，写 exception.md
 
@@ -369,6 +371,42 @@ Step 7: Closeout
         → KP-04 / KP-05 / KP-06 全通过
         → 节点才允许转绿
 ```
+
+## Loop Delta 速查
+
+Loop Delta 是一次执行回报能否写入 roadmap 的最小单位。Worker / Curator 可以用自然语言上报，但主 Agent 回写前必须先压成这张卡：
+
+| 字段 | 写什么 |
+|---|---|
+| `scope` | 当前 spine 节点、runtime group、当前 runtime 节点 |
+| `event` | `start / complete / block / unblock / discover / repair / rollback` |
+| `state_after` | 目标状态：灰 / 黄 / 红 / 绿；不能只写“处理中” |
+| `evidence` | 代码、测试、日志、文档、用户裁决；缺证据只能黄/红，不能绿 |
+| `structure_delta` | 是否插入灰节点、创建子环、扩 group、升 spine、写 Gate |
+| `knowledge_delta` | 是否新增 KP、Repair Loop、旧知识退出、锚点改写 |
+| `sync_required` | edge color、父节点传播、group label/color/几何、exception.md、docs writeback |
+
+默认路径：
+
+```mermaid
+flowchart LR
+  A["收到 Loop Delta"] --> B["定位 scope"]
+  B --> C["先补结构<br/>新节点 / 子环 / group"]
+  C --> D["写状态和证据"]
+  D --> E["自底向上传播颜色"]
+  E --> F["同步 edge + group"]
+  F --> G["audit.py + 人工检查"]
+```
+
+新增任务链的落点只有三种：
+
+| 新任务性质 | 落点 |
+|---|---|
+| 只是当前 workblock 的新问题 | 插入同一 runtime group 的横向链，默认灰 |
+| 新问题已开始处理，且有独立入口/出口/证据 | 在同一 runtime group 派生横向子环 |
+| 跨多个工作块、需要独立 gate / Worker Pack，或改变主干顺序 | 主 Agent 裁决后才升 spine |
+
+任何一轮 Loop 后，打开 `.canvas` 都必须能直观看到 agent 当前怎么完成任务：已经完成的是绿，正在推进的是黄，阻塞的是红，新发现但未开始的是灰，且所有子任务都在所属 group 或子环里。
 
 ## 未决点演化速查
 

@@ -22,6 +22,8 @@
 - 每个业务域的 `knowledge/README.md` 必须作为 durable knowledge 的统一索引入口。
 - 业务域文档需要带 `#业务域` 标签。
 - 功能新增或修改时，要在业务域 README 和叶子文档补 `[[功能点]]`。
+- 要进入白知识候选、`locked facts`、路书锚点或 Worker Pack 的 Obsidian claim，必须有 `claim_id`，并能通过 `业务域文件夹 + #业务域 + [[功能点]] + Obsidian ref` 指回原文。
+- Obsidian ref 优先写 `[[页面#^block-id]]`；同时保留 `start_line/end_line + start_text/end_text` 供程序校验。
 - 代码落点格式固定为：`功能名 符号名 @filename#L{start}-L{end}`。
 - 工具函数默认不记录到业务文档，除非用户明确要求。
 - 会话产物默认要收敛成白 / 灰 / 黑知识，不直接保存为原始对话转录。
@@ -40,6 +42,7 @@
   - authoritative 入口
   - `[[功能点]]`
   - 当前冲突/遗留问题索引
+- 机器校验用 claim/ref 默认放在 `<业务域>/knowledge/sourcecheck.jsonl`，不塞进根 README。
 
 ## authority
 

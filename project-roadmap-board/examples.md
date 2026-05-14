@@ -234,6 +234,70 @@ gate 节点（KP-00 ~ KP-06）必须封到独立 `Gate:` group，放在主干左
 6. SubAgent 开始处理 `配置同步到 DB`：在同 group 另起泳道 `开始:gsc → resource → llm → 结束:dry-run match`
 7. group 内全绿后，`后端跑通` 才能黄→绿；group label `[处理中]→[已完成]` + group color `5→4`；group 保留作为历史证据
 
+## 范例 7A：Loop Delta 状态事务
+
+场景：Worker 正在推进 `实现:Ready 状态同步`，回报发现“离线自动 Ready 没有真实运行证据”，并开始补证据链。
+
+Worker 可以自然语言上报，但主 Agent 回写前必须压成 Loop Delta：
+
+```json
+{
+  "scope": {
+    "spine": "小局结算与 Ready 推进闭环",
+    "group": "工作块:小局结算与 Ready 推进闭环:[处理中]",
+    "node": "实现:Ready 状态同步"
+  },
+  "event": "discover",
+  "state_after": "yellow",
+  "evidence": "代码已有状态写入，缺少离线玩家自动 Ready 的 e2e/日志证据",
+  "structure_delta": [
+    "在同 group 横向链中插入灰节点: 验证:离线自动 Ready 真实链路",
+    "因该节点已开始处理，派生子环: 调查:离线玩家态来源 -> 验证:e2e/日志 -> 回到该节点"
+  ],
+  "knowledge_delta": "无新 KP；不改锚点",
+  "sync_required": [
+    "扩 group 几何",
+    "父节点保持黄",
+    "edge color 跟随目标节点",
+    "audit.py"
+  ]
+}
+```
+
+回写后的路书形态：
+
+```
+[工作块:小局结算与 Ready 推进闭环:[处理中]]
+小局结算与 Ready 推进闭环 [黄]
+  → 事实卡:结算入口出口 [绿]
+  → 实现:Ready 状态同步 [黄]
+  → 验证:离线自动 Ready 真实链路 [黄]
+  → 验证:Ready/超时进入下一轮 [灰]
+  → 结束:结算 Ready 闭环 [灰]
+  → 小局结算与 Ready 推进闭环
+
+验证:离线自动 Ready 真实链路 [黄]
+  ↓
+调查:离线玩家态来源 [灰] → 验证:e2e/日志 [灰] → 验证:离线自动 Ready 真实链路
+```
+
+这一次回写必须同时完成：
+
+1. 插入 `验证:离线自动 Ready 真实链路` 到主 runtime 横向链。
+2. 该节点已开始处理，所以给它创建同 group 内子环。
+3. 扩大 `工作块:` group，完整包住 P + runtime 主链 + 子环。
+4. 自底向上传播颜色：子环全灰，所以子环父节点黄，外部 workblock 仍黄。
+5. 所有 edge color 跟随目标节点；指向灰节点的 edge 不设 color。
+6. 跑 `audit.py`，再人工确认状态与 Worker 真实进度一致。
+
+反例：
+
+```
+聊天里写“后面补离线 Ready 验证”，canvas 不变
+```
+
+违规：用户打开路书看不到新增任务链，也看不到当前 agent 为什么还没把节点转绿。
+
 ## 范例 8：从 PRD 生成首环（morph72-v14）
 
 PRD 没有显式功能编号时，先抓动词事实卡，再按用户旅程收敛为 3-7 个首环工作块。
