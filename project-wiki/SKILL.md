@@ -6,6 +6,11 @@ description: >-
   生成 Knowledge Pack、审计文档健康、或摄取新素材时使用。
 ---
 
+> **公理继承 / Axiom Inheritance**
+> 本 skill 服从顶层公理 `typed evidence gates action`——
+> 未经类型化（三色 + authority + kind）的上下文不允许驱动行动。
+> 在该公理下，本 skill 的职能：执行 Vault 的 Query / Ingest / Lint，是 Curator 的工具层
+
 # project-wiki
 
 基于 Obsidian CLI 的项目知识管理系统——**知识只编译一次并保持更新，而不是在每次查询时重新推导。**

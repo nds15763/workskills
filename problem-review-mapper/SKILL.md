@@ -8,6 +8,11 @@ description: >-
   project-knowledge-curator。
 ---
 
+> **公理继承 / Axiom Inheritance**
+> 本 skill 服从顶层公理 `typed evidence gates action`——
+> 未经类型化（三色 + authority + kind）的上下文不允许驱动行动。
+> 在该公理下，本 skill 的职能：用图先于文字的方式做证据收敛和裁决，多 agent 扇出取证
+
 # Problem Review Mapper
 
 复杂问题先画事实链、目标链和 diff 链；再调用必要的知识治理 skill；最后输出裁决，而不是只给解释。

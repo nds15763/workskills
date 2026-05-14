@@ -14,6 +14,11 @@ description: >-
   节点闭环、扇出工作、SubAgent 协作、知识校准、文档驱动时使用。
 ---
 
+> **公理继承 / Axiom Inheritance**
+> 本 skill 服从顶层公理 `typed evidence gates action`——
+> 未经类型化（三色 + authority + kind）的上下文不允许驱动行动。
+> 在该公理下，本 skill 的职能：把类型化知识编译成 Canvas 路书的合法执行单元（工作块 + 锚点 + KP gate）
+
 # Project Roadmap Board
 
 执行位置：仓库根目录。

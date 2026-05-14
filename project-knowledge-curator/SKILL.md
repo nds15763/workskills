@@ -8,6 +8,11 @@ description: >-
   README 索引、双链、补文档、修知识、错知识收敛时使用。
 ---
 
+> **公理继承 / Axiom Inheritance**
+> 本 skill 服从顶层公理 `typed evidence gates action`——
+> 未经类型化（三色 + authority + kind）的上下文不允许驱动行动。
+> 在该公理下，本 skill 的职能：给业务域知识打类型（三色 + authority + kind），错知识降权归档
+
 # Project Knowledge Curator
 
 执行位置：仓库根目录。
