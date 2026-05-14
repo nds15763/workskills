@@ -96,6 +96,7 @@ description: >-
 - **灰→黄必须立即创建对应 `工作块:` group 节点 + 横向 runtime 链**（规则 3 + 0K，整个系统最关键的触发规则）：group 必须**完全包含 P 自身 + P 的所有 runtime 节点 + 子链递归到底**。
 - **运行时处理一律横向展开**：事实卡、调查、实现、验证、证据、未决点、Exception 都放在所属 runtime group 内；禁止把运行时细节插回竖向首环主干。
 - **每轮 Loop 必须是一次状态事务**：收到 Worker / Curator / 主 Agent 自查回报后，先把新增任务链、子环、状态变化、证据摘录写进 `.canvas`，再同步 edge color、group label/color、group 几何和父节点颜色传播，最后跑 audit；禁止只改节点文字、只改颜色，或把新增问题留在聊天/Todo 里。
+- **每轮外部执行循环必须落成子环**：Codex Goal / 进度面板、Claude Code Ralph Loop、主 Agent 自查 checklist、SubAgent review round 这类“可命名的一轮”，只要影响路书状态或 closeout，就必须在当前 runtime 节点下形成一个内部子环；子环节点作为同一批状态事务一起变色，不能把 checklist 一项项散落成父环节点或逐项转绿。
 - **嵌套 group 允许完全包含、禁止部分相交**（规则 0K）：子工作块的 group 可以套在父工作块的 group 里，但两个 group 矩形不能部分相交。
 - **gate 节点必须封到独立 `Gate:` group**（规则 0L）：gate 必须串在 spine 主干上，连接在前任务之后、后任务之前；Gate group 与所有 `工作块:` group 完全分离。
 - 业务事实、功能点索引、冲突裁决、错知识修正由 Knowledge Curator 负责。
@@ -359,6 +360,7 @@ Step 5: 主 Agent 先回写路书
         → 若本次收到新 Knowledge Pack / Repair Loop 结果 / 未决点驱散，先按规则 0J 对当前 .canvas 做锚点 grep 审计，确定锚点改写/删除和节点回退
         → 第一件事：把 Loop Delta 作为同一批状态事务写入 .canvas（spine 节点颜色变化必须同步更新 group label 状态后缀和 group color）
         → 状态事务顺序固定：结构变更（插入节点/创建子环/扩 group）→ 节点状态与证据 → 父节点颜色传播 → edge color → group label/color/几何 → audit
+        → 若 Loop Delta 来自 Codex Goal / 进度面板 / Claude Code Ralph Loop / review round，先把“本轮做了什么”压成一个内部子环；子环整体绿/黄/红后，再传播到父 runtime 节点
         → 改完跑 audit.py，exit 0 才算脚本通过；同时主 Agent 必须人工 review 审计清单的 [人工] / [半自动] 项
         → 第二件事：如有阻塞，写 exception.md
 
@@ -407,6 +409,18 @@ flowchart LR
 | 跨多个工作块、需要独立 gate / Worker Pack，或改变主干顺序 | 主 Agent 裁决后才升 spine |
 
 任何一轮 Loop 后，打开 `.canvas` 都必须能直观看到 agent 当前怎么完成任务：已经完成的是绿，正在推进的是黄，阻塞的是红，新发现但未开始的是灰，且所有子任务都在所属 group 或子环里。
+
+### 外部循环映射硬约束
+
+外部工具的循环状态不是 roadmap 状态源，只是执行投影。每个可命名循环都必须先压成 Loop Delta，再落到 `.canvas`：
+
+| 外部循环 | roadmap 约束 |
+|---|---|
+| Codex Goal / 进度面板 | 只有用户显式要求或已有 active goal 时才创建；Goal checklist 不能替代 `.canvas`。Goal 标记 complete 前，必须已写入对应子环、跑过 `audit.py`、完成快问快答自检；Goal complete 不是节点转绿证据。 |
+| Claude Code `/ralph-loop` | prompt 必须有 `--max-iterations` 和 `--completion-promise`；每次 iteration 先读当前 `.canvas`，结束前写一个“Ralph iteration N”子环；未写路书、未 audit、未快问快答时不得输出 completion promise。 |
+| review / skeptic / 主 Agent 自查 round | 不能只留聊天、Todo 或 audit-log；只要 round 影响 closeout，就在当前 runtime 节点下创建子环，节点全量变色后再传播父节点。 |
+
+子环是一轮的最小状态单位：一轮完成时，子环内部节点可以全绿，父 runtime 节点是否转绿由外部父环证据决定；父环仍可保持黄/红。禁止把“本轮 5 个 checklist item”直接拆成父环 5 个 sibling 再逐项转绿。
 
 ## 未决点演化速查
 

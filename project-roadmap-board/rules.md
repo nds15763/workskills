@@ -965,6 +965,47 @@ runtime 子链:                 开始解决A → 结束解决A → 问题A
 
 如果工具暂时不能自动应用事务，主 Agent 也必须按上述顺序手工修改 `.canvas`；不能把“后面统一整理”作为理由延迟同步。
 
+### 规则 5B：外部循环必须映射成内部子环
+
+Codex Goal / 进度面板、Claude Code Ralph Loop、SubAgent review round、主 Agent 自查 checklist 都不是 `.canvas` 的替代状态源。它们只要影响 roadmap closeout、节点颜色、回退、验收或 gate，就必须先被压成 `Loop Delta`，再在当前 runtime 节点下创建一个闭合的内部子环。
+
+适用触发：
+
+| 外部循环信号 | 必须落到路书的结构 |
+|---|---|
+| Codex Goal checklist 出现一组“本轮已完成/待完成”项 | 当前 runtime 节点下创建 `Round N / Goal step` 子环；checklist item 只能作为子环节点或证据摘要，不能直接升父环 sibling |
+| Claude Code `/ralph-loop` iteration 完成 | 当前 runtime 节点下创建 `Ralph iteration N` 子环；iteration 的发现、修复、验证、review 作为该子环内部节点 |
+| reviewer / skeptic / 主 Agent 自查发现需要回退或补证据 | 先在当前 runtime group 插入灰/黄节点；若已经开始处理，立即派生子环 |
+| Repair Loop / 旧知识退出导致假绿撤销 | 被撤销节点回退黄/红，同时在回退节点下创建 `Repair / rollback` 子环记录“识别旧知 -> 替代真源 -> 改锚点 -> 重验” |
+
+子环状态传播要求：
+
+1. **一轮一个子环**：一轮外部循环对应一个内部子环；不要把外部 progress checklist 一项项散落成父 runtime 链 sibling。
+2. **子环整体变色**：同一轮子环的节点、edge、group 几何和父节点传播必须在同一批事务里写入；不得今天绿一个 checklist、明天绿一个 checklist。
+3. **父节点不跟着假完成**：子环全绿只证明“这一轮执行闭合”；父 runtime / spine 是否转绿仍取决于外层入口/出口、证据和 gate。父节点可以继续黄或红。
+4. **证据留在节点摘要**：子环节点只放短证据索引；长日志、长 review、长问答放 OpenSpec evidence、audit-log、exception.md 或业务域文档。
+5. **audit 后才能宣称完成**：子环写入后必须跑 `audit.py` 并人工检查 P0 清单；audit 失败时，外部循环只能报 blocked / partial，不能包装成完成。
+
+#### Codex Goal 约束
+
+Codex Goal 是执行会话的目标包装，不是路书状态源：
+
+- 只有用户显式要求创建 Goal，或当前会话已经存在 active Goal 时，才把 roadmap 节点绑定到 Goal；不能为了“显得有进度”临时造 Goal。
+- Goal 只能描述当前闭环的目标、gate 和停止条件；不能把未创建/未批准/未验证的子 OpenSpec 或代码实现写成已完成目标。
+- Goal checklist 每次 closeout 前必须映射到 `.canvas`：有状态变化则创建/更新子环；没有状态变化也要说明“本轮无 roadmap delta”。
+- `update_goal complete` 只能发生在 `.canvas` 已写回、父环颜色传播完成、`audit.py` 通过、快问快答自检完成之后；Goal complete 不能作为节点转绿证据。
+- Goal 超预算、暂停、被中断或只完成部分 gate 时，roadmap 对应节点保持黄/红，并写明唯一阻塞面；不能把“本轮停下”写成“目标完成”。
+
+#### Claude Code Ralph Loop 约束
+
+Claude Code `/ralph-loop` 是 stop-hook 驱动的重复 prompt，不会自动理解 roadmap 状态；因此 roadmap 侧必须加硬约束：
+
+- 启动 Ralph Loop 时必须写 `--max-iterations` 与 `--completion-promise`；prompt 必须要求每次 iteration 先读 `.canvas`、结束前输出 Loop Delta。
+- 每个 Ralph iteration 都必须落一个内部子环，命名建议 `Ralph iteration N:<本轮闭合点>`；iteration 里的实现、验证、review、回退只在该子环内变色。
+- Ralph Loop 达到 completion promise 前，必须满足：子环写回、父节点传播、`audit.py` 通过、快问快答自检无阻塞。否则只允许写 `partial / blocked / awaiting human`。
+- Ralph Loop 连续 3 轮没有推进同一个 roadmap 节点的颜色、证据或结构，必须写红/黄阻塞节点并升级人工；禁止靠无限 iteration 消耗上下文。
+- 如果 Ralph Loop 的本轮成果只完成了代码草稿、命令行验证或材料整理，roadmap 节点只能转到对应的子环绿；外层 E2E、owner gate 或上线 gate 未过时，父环保持黄/红。
+
 ### 规则 6：灰色节点不需要环
 
 灰色（无色）节点表示"还没开始处理"，不需要也不应该有 runtime 链。它就是主干或横向链条中一个待处理的节点。只有当它从灰色变成黄色（开始处理）时，才需要派生 runtime 链。
@@ -1250,6 +1291,8 @@ OpenSpec 是设计与任务材料，不是路书的结构真源。核心 OpenSpe
 - [ ] `[人工]` **材料/说明节点接入了业务 edge 或参与状态判断**（违反材料/说明节点规则：只能解释来源，不能表示进度）
 - [ ] `[人工]` **路书状态与 Agent 实际进度不一致**（Agent 已推进但路书没更新 — 流程审计）
 - [ ] `[人工]` **Loop Delta 没有作为同一批状态事务落入 `.canvas`**（只改 Todo/聊天/节点文字/颜色，未同步结构、edge、group、传播 — 违反规则 5A）
+- [ ] `[人工]` **Codex Goal / Claude Ralph Loop / review round 已完成但没有对应内部子环**（外部 checklist 或 iteration 被当成路书状态源 — 违反规则 5B）
+- [ ] `[人工]` **子环节点被逐项散落到父 runtime 链并逐个转绿**（一轮外部循环没有作为一个子环整体变色 — 违反规则 5B）
 - [ ] `[脚本]` 黄色节点没有闭合的 runtime 链（违反规则 3：灰→黄必须补横向工作台）
 - [ ] `[脚本]` runtime 链不闭合（找不到 end→parent 的 bottom→bottom edge）
 - [ ] `[脚本]` 黄/红 runtime 子节点缺少闭合 inner runtime 子环（违反规则 3 递归触发）
