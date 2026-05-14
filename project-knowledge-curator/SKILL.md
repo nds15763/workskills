@@ -21,11 +21,34 @@ description: >-
 
 这不是一个“帮忙写几篇文档”的 skill，而是一个**知识校准器**：
 
-- 所有 Code 必须先由 Docs 驱动
+- 所有 Code 必须先由经过知识校准的 Docs / Knowledge 驱动
 - 先确认业务域，再读 docs
 - 先索引，再放进默认上下文
 - 先做 authority 分级，再给 Worker 用
 - 发现错知识时，让它退出默认上下文
+
+## 与 Context Compiler 的关系
+
+本 skill 是知识类型系统。它负责回答一个问题：
+
+> 这段 context 凭什么能驱动行动？
+
+Docs、会议、日志、代码分析和聊天总结都只是 source。它们必须被标注为 `knowledge_kind`、`knowledge_color`、`authority_level` 后，才能进入 Knowledge Pack、卡片、图、路书或 Worker Pack。
+
+更准确的公理是：
+
+> 未经类型化的 context 不能驱动行动。
+
+因此，“Docs 驱动 Code”不能理解为“文档天然正确”。正确链路是：
+
+```mermaid
+flowchart LR
+  A["source<br/>docs / code / logs / chat"] --> B["Curator type check"]
+  B --> C["baseline<br/>white + authority"]
+  B --> D["advisory<br/>gray / supporting"]
+  B --> E["blocked<br/>black / stale"]
+  C --> F["action<br/>card / graph / roadmap / Worker Pack"]
+```
 
 ## Canonical Paths
 - Obsidian仓库： `/Users/kim/code/narnia/narnia-docs-kim`

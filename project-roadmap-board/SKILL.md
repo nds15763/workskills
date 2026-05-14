@@ -66,6 +66,18 @@ description: >-
 - 首环主干回答“这件事从开始到完成要闭合哪几个核心工作块”。runtime group 回答“当前工作块怎么推进到可验证闭合”。Agent / Worker / Gate 是执行投影和门禁，不是路书本体。
 - 一个 runtime 节点如果在执行中长出独立入口、出口、状态推进、证据要求或阻塞面，**先在同一 group 内派生横向子环**；只有它跨多个工作块、需要独立 gate / Worker Pack、或阻塞主干闭环时，才提升成新的 spine 工作块。
 
+### 与 Context Compiler 的关系
+
+本 skill 是闭环执行真源，不是业务事实真源。
+
+路书只消费已经类型化的知识：
+
+- `white / baseline` 可以进入锚点、Worker Pack 和转绿依据。
+- `gray / advisory` 只能作为风险、未决点或调查输入；不能直接让节点转绿。
+- `black / blocked` 必须被隔离；不能升首环、不能进 Worker Pack、不能作为锚点依据。
+
+`.canvas` 记录进度、门禁、执行闭环和状态传播；业务事实仍由 Curator/Wiki 维护。收到新 Knowledge Pack、Conflict Verdict 或 Repair Record 后，主 Agent 必须先审计 `.canvas` 锚点是否需要改写，再推进颜色。
+
 ### 建板原则
 
 - **可执行首环 = PRD 事实卡 + Obsidian 已有知识 + Curator 三色裁决**。首环不是"PRD 段落 + 直觉"，必须经过知识校准（规则 0CC）。

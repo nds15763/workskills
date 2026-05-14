@@ -13,7 +13,7 @@ description: >-
 
 # project-wiki
 
-基于 Obsidian CLI 的项目知识管理系统——**知识只编译一次并保持更新，而不是在每次查询时重新推导。**
+基于 Obsidian CLI 的项目知识 IO 系统——**知识只编译一次并保持更新，而不是在每次查询时重新推导。**
 
 ## 核心哲学
 
@@ -23,14 +23,23 @@ Obsidian 是 IDE，LLM 是程序员，Wiki 是源代码。
 - LLM 负责：摘要、交叉引用、归档、记账——让知识库长期有效的所有繁杂工作
 - 知识在 Wiki 层持续积累产生复利，不消失在聊天历史中
 
+## 与 Context Compiler 的关系
+
+project-wiki 是知识 IO 层：负责把原始资料读进来、搜出来、写回去、索引起来。
+
+注意：Docs 是 source，不是自动真理。任何文档、会议、代码分析或聊天总结，只有经过 Curator 的 `knowledge_color`、`authority_level`、`knowledge_kind` 裁决后，才能成为默认行动依据。
+
 ## Agent 行为规则
 
-> **所有 Code 必须由 Docs 驱动。** [!important]
+> [!important]
+> 所有 Code 必须由经过知识校准的 Docs / Knowledge 驱动。
 
 如果当前任务没有对应的 `功能点` 和 `业务域`，**不能直接写代码**。必须先：
 1. 询问用户需要哪个业务域的知识
 2. 确认功能点是否已存在于该业务域
 3. 如果是全新业务域/功能点，与用户沟通后先收集知识再执行
+
+写代码前不是“找到一篇文档就够了”，而是必须确认这份资料在当前任务里属于 baseline、advisory 还是 blocked。
 
 ### 对话入口协议
 
