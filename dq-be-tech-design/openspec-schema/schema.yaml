@@ -1,0 +1,155 @@
+name: backend
+version: 1
+description: >-
+  后端团队专用 OpenSpec workflow（基于 spec-driven fork）。相对上游增加 tech_design artifact：
+  proposal → design → tech_design → tasks → 实施。规范详见 dq-be-tech-design skill。
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Initial proposal document outlining the change
+    template: proposal.md
+    instruction: >
+      Create the proposal document that establishes WHY this change is needed.
+
+      Sections:
+      - **Why**: 1-2 sentences on the problem or opportunity. What problem does this solve? Why now?
+      - **What Changes**: Bullet list of changes. Be specific about new capabilities, modifications, or removals. Mark breaking changes with **BREAKING**.
+      - **Capabilities**: Identify which specs will be created or modified:
+        - **New Capabilities**: List capabilities being introduced. Each becomes a new `specs/<name>/spec.md`. Use kebab-case names.
+        - **Modified Capabilities**: List existing capabilities whose REQUIREMENTS are changing. Only include if spec-level behavior changes. Check `openspec/specs/` for existing spec names.
+      - **Impact**: Affected code, APIs, dependencies, or systems.
+
+      Keep it concise (1-2 pages). Focus on the "why" not the "how" — implementation details belong in tech_design.md.
+    requires: []
+
+  - id: specs
+    generates: specs/**/*.md
+    description: Detailed specifications for the change
+    template: spec.md
+    instruction: >
+      Create specification files that define WHAT the system should do.
+
+      Create one spec file per capability listed in the proposal's Capabilities section.
+      - New capabilities: use kebab-case name (specs/<capability>/spec.md).
+      - Modified capabilities: use existing spec folder name.
+
+      Delta operations (## headers): ADDED / MODIFIED / REMOVED / RENAMED Requirements.
+
+      Format:
+      - Each requirement: `### Requirement: <name>` followed by description
+      - Use SHALL/MUST for normative requirements
+      - Each scenario: `#### Scenario: <name>` with WHEN/THEN format
+      - Every requirement MUST have at least one scenario.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: ADR-style decision record (short)
+    template: design.md
+    instruction: >
+      Create the ADR-style decision record explaining KEY TECHNICAL CHOICES.
+
+      This is the SHORT decision record. Detailed implementation design belongs in tech_design.md.
+
+      Sections:
+      - **Context**: Background, current state, constraints, stakeholders
+      - **Goals / Non-Goals**: What this design achieves and explicitly excludes
+      - **Decisions**: Key technical choices with rationale (why X over Y?). Include alternatives considered.
+      - **Risks / Trade-offs**: Known limitations. Format: [Risk] → Mitigation
+      - **Migration Plan**: Steps to deploy, rollback strategy (if applicable)
+      - **Open Questions**: Outstanding decisions or unknowns to resolve
+
+      Keep it SHORT (1-2 pages). This is the decision gate.
+
+      Add a cross-reference at the top: `> 详细后端技术设计见 [tech_design.md](./tech_design.md)`
+
+      Detailed implementation (data models, protos, flows, monitoring, migration, rollback) belongs in tech_design.md (see dq-be-tech-design skill).
+    requires:
+      - proposal
+
+  - id: tech_design
+    generates: tech_design.md
+    description: 后端完整技术方案（领域建模 + 实现细节，23 节模板）
+    template: tech_design.md
+    instruction: >
+      Invoke the `dq-be-tech-design` skill before writing (use the Skill tool).
+
+      Create the comprehensive backend technical design document.
+
+      Follow the 23-section template (见 dq-be-tech-design skill §3):
+
+      必填节（所有档位都要实写）：
+      1. 目标 — 1-3 段 what + why，技术视角
+      2. 需要pm或者其它相关方决策和讨论的点 — 需要产品、运营、设计、法务、数据、上下游 owner 等相关方拍板或讨论的问题
+      3. 整体架构 — 服务调用链路图（必须，flowchart TB + 编号箭头 + 调用时序表格；**每个服务/仓库的内部组件用一个 subgraph 框起来表明服务边界**）；按需：用例图（多角色/新增用户能力）/ 系统分层架构图（新服务/跨多服务，入口层→业务层→公共层→基础组件层；**粒度到服务/仓库为止，不展开服务内部**）/ 数据流向图（消息/多写场景）；服务清单表格
+
+      条件必填节（章节标题必有，不触发时正文写"无改动"+ 一行原因，不省略整节）：
+      4. 服务职责边界 — 触发：多服务 / 新服务
+      5. 领域实体关系（DDD）— 触发：新聚合 / 新实体 / 改聚合边界；mermaid classDiagram 或文字
+      6. 领域服务能力（DDD）— 触发：新增/改 domain_service 方法；必须用领域能力语义（非 curd）
+      7. 库表设计 — 触发：库表变更；所有涉及表均列完整 CREATE TABLE；新建表/修改表（标注变更字段）/跨域临时只读表（标注 [跨域临时]+owner+消费字段）
+      8. Proto 契约 — 触发：idl 变更；IDL 路径+go_package；文件清单（新建/修改+变更点）；每文件 proto 代码块（message/enum/service+HTTP 绑定）；公共约定（分页/错误码等）
+      9. 状态机 — 触发：引入/修改状态机；mermaid stateDiagram-v2；列出状态、转换、触发事件、守卫条件
+      10. 核心流程 — 触发：新流程 / 流程变更
+      11. 服务启动 — 触发：新服务 / 启动顺序变更
+      12. 服务目录结构（服务内部代码架构）— 触发：新服务 / 结构大调；对照 dq-be-code-structure；和 §3 系统分层架构图（服务/仓库粒度）互为层级
+      13. 错误码规范 — 触发：新增业务错误码
+      14. 日志规范 — 触发：新增关键事件日志；日志工具使用规范见 dq-be-libs §2.3
+      15. 监控 / 告警 — 触发：新增指标 / 告警点
+      16. 数据迁移 — 触发：存量数据处理
+      17. 兼容性 / 灰度 / 回滚 — 触发：线上兼容考量
+      18. 部署 — 触发：新服务 / 新增依赖资源 / 已有资源容量变更 / 明确依赖的环境变量
+
+      必填节（末尾）：
+      19. 风险 & 兜底 — 即使无重大风险也要写"主要风险评估"一段
+      20. 不在本设计范围 — 显式圈边界
+
+      选填节：
+      21. 参考 / 相关文档
+      22. todo事项
+
+      必填节（末尾 · 贯穿生命周期）：
+      23. 变更点核心记录 — 表格 `# | 变更点名 | 时间 | commit_id | 变动摘要 | reviewer`;每次 tech_design 方案层面调整后追加一行，统一触发（作者一句话如"在 tech_design 里记录一个变更点" / "登记变更"），AI 读当前 commit + 自上条记录以来的 diff 自动梳理变动，作者无需手写
+
+      分档触发：
+      - 必须写档（新服务 / 新领域 / 跨服务 / 库表变更 / 架构影响）：全量模板
+      - 建议写档（服务内 3+ 文件新功能）：全量模板但更多条件节可能是"无改动"
+      - 可不写档（单文件 fix / 参数调整 / 文案）：无需写
+
+      图形约定：流程图、时序图、架构图等图形内容优先使用 mermaid 格式（可 diff、版本管理友好）。领域实体关系用 mermaid classDiagram。
+
+      详见 dq-be-tech-design skill 规范。
+    requires:
+      - proposal
+      - design
+
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: >
+      Create the task list that breaks down the implementation work.
+
+      **IMPORTANT: Follow the template below exactly.** The apply phase parses checkbox format to track progress.
+
+      Guidelines:
+      - Group related tasks under ## numbered headings
+      - Each task MUST be a checkbox: `- [ ] X.Y Task description`
+      - Tasks should be small enough to complete in one session
+      - Order tasks by dependency
+
+      Reference specs for what needs to be built, tech_design for how to build it.
+
+      Each task should be verifiable - you know when it's done.
+    requires:
+      - specs
+      - design
+      - tech_design
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks, mark complete as you go.
+    Pause if you hit blockers or need clarification.
