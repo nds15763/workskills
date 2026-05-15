@@ -39,6 +39,10 @@ status: beta
 - **一个需求一个 change**：同一需求从 proposal 到归档都在同一个 change 内持续维护。
 - **仓库自闭环优先**：每个仓库 / 服务都有自己的 openspec change 和当前态 tech_design；跨多端 / 多仓库公共汇总统一放 `gitlab.daqian369.com/esm/narnia/dev`，但不替代仓库内文档。
 - **多轮人工 review**：技术设计、开发联调、测试阶段都可能触发 review。
+- **三类逻辑审计**：
+  - `logical-grammar`：实体、关系、状态机、字段语义、服务边界必须合法组合；对象域错了不能写成设计结论。
+  - `truth-condition-checker`：章节结论、gate、验收口径必须写真值条件、失败条件和反例；未知不能默认通过。
+  - `say-show-boundary`：业务事实、技术取舍、愿景/审美/产品偏好分开写；价值取向不能伪装成事实证据。
 
 ## 按需加载导航
 
@@ -48,6 +52,9 @@ status: beta
 | 实施前人工确认、多次 review、AI Native 操作流程、生成时机、change 使用原则     | `references/review-and-change-lifecycle.md` |
 | 查示例文档、openspec schema source of truth、install.sh、升级路径 | `references/examples-and-schema.md`         |
 | 维护本规范 TODO / 未定稿条目                                    | `references/backlog.md`                     |
+| 实体/关系/状态机/字段语义是否成句                                  | 先用 `logical-grammar`，再写章节结论         |
+| 章节结论/gate/验收是否成立、是否互相矛盾                             | 先用 `truth-condition-checker`              |
+| 产品愿景、审美、方向感、技术偏好是否被写成事实                           | 先用 `say-show-boundary`                    |
 
 ## 相关
 

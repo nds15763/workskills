@@ -27,7 +27,13 @@ Obsidian 是 IDE，LLM 是程序员，Wiki 是源代码。
 
 project-wiki 是知识 IO 层：负责把原始资料读进来、搜出来、写回去、索引起来。
 
-注意：Docs 是 source，不是自动真理。任何文档、会议、代码分析或聊天总结，只有经过 Curator 的 `knowledge_color`、`authority_level`、`knowledge_kind` 裁决后，才能成为默认行动依据。
+注意：Docs 是 source，不是自动真理。任何文档、会议、代码分析或聊天总结，只有经过 Curator 的 `knowledge_color`、`authority_level`、`knowledge_kind`、`claim_type` 裁决后，才能成为默认行动依据。
+
+Wiki 只负责 IO 和引用校验；三类逻辑校准不在 Wiki 层定案：
+
+- `logical-grammar`：SourceCheck 可证明引用对得上，但对象/关系/状态是否合法要另判。
+- `truth-condition-checker`：SourceCheck 不证明 claim 为真，只证明可回指原文。
+- `say-show-boundary`：SourceCheck 不证明价值、审美、愿景应被采纳；摄取时必须标 `claim_type`。
 
 ## Agent 行为规则
 
@@ -74,7 +80,7 @@ path + line
 5. Obsidian ref 能解析到页面 / heading / block
 6. 行号不越界，字符串边界存在且唯一
 
-通过 SourceCheck 只说明“引用对得上”，不说明“可以驱动行动”。后者仍必须交给 Curator 判 `knowledge_kind / knowledge_color / authority_level`。详细协议见 `references/obsidian-sourcecheck.md`。
+通过 SourceCheck 只说明“引用对得上”，不说明“可以驱动行动”。后者仍必须交给 Curator 判 `knowledge_kind / knowledge_color / authority_level / claim_type`。详细协议见 `references/obsidian-sourcecheck.md`。
 
 ## 长任务知识门禁
 
@@ -144,7 +150,8 @@ Layer 2: Wiki（<业务域>/，LLM 生成并维护）
     │  · 三色知识（白/灰/黑）= 默认使用策略              │
     │  · Authority 分级（A/B/C/D）= 证据强度             │
     │  · 知识类别（prd/constraint/architecture）         │
-    │  · 每条 durable knowledge 必须同时带这三个维度      │
+    │  · claim_type（fact/rule/value/taste/vision 等）   │
+    │  · 每条 durable knowledge 必须同时带这四个维度      │
     └────────────────────────────────────────────────────┘
 
 Layer 3: Schema（_schema/，治理规则）
@@ -168,6 +175,8 @@ Layer 3: Schema（_schema/，治理规则）
 | knowledge_kind | prd | 产品目标、业务规则、验收口径 |
 | knowledge_kind | constraint | 门闩、流程限制、禁止事项 |
 | knowledge_kind | architecture | 模块边界、数据流、控制面设计 |
+| claim_type | fact/rule | 可验证事实或规则，才可能进入白知识 |
+| claim_type | value/taste/vision/decision | 取向、审美、愿景或决策，不得单独驱动行动 |
 
 ## 三个核心操作
 
@@ -205,7 +214,8 @@ python3 scripts/search.py backlinks "masquerade/轮次状态机.md"
 3. Curator 写入/更新 wiki 页面：
    - 写 summary page → 更新 index.md → 更新实体页/概念页
    - 标注新数据与旧知识的矛盾
-   - 每条新知识必须带 knowledge_kind + knowledge_color + authority_level
+   - 每条新知识必须带 knowledge_kind + knowledge_color + authority_level + claim_type
+   - 摄取时区分事实、规则、推断、价值、审美、愿景和决策；价值/审美/愿景只能作为取向或约束，不得写成白知识事实
    - 新知识默认进入 gray knowledge（待确权）
 4. 更新 log.md（追加条目）
 5. `lint.py` 验证链接健康
