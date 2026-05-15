@@ -24,6 +24,7 @@ description: >-
   - `truth-condition-checker`：claim / node / gate / decision 什么条件下为真或为假。
   - `say-show-boundary`：事实命题与价值、审美、愿景、偏好边界。
 - 当用户前提不成立时，必须提示纠正：说明旧说法为什么不成立、当前证据支持什么、下一步如何改，不要只顺着用户继续执行。
+- 调度契约（discovery / fanout / subtask exec / pre-finish / skill authoring）见 `references/calibration-hooks.md`。本机 `context-compiler` 是该契约的一种实现，不是契约本身——换机器需重建本机实现，但契约和下游 skill 的"输入前置检查"段始终生效。这是 **router 判 + skill 自检** 双层冗余设计：接受重复，不接受逻辑失效。
 
 ## 快速路由
 
@@ -57,9 +58,15 @@ flowchart TD
   J -- "否" --> L{"是否后端 tech_design/OpenSpec?"}
   L -- "是" --> M["加载 dq-be-tech-design"]
   L -- "否" --> N{"是否逻辑校准?"}
-  N -- "对象/关系/状态" --> O["加载 logical-grammar"]
-  N -- "claim/gate/矛盾" --> P["加载 truth-condition-checker"]
-  N -- "价值/审美/愿景" --> Q["加载 say-show-boundary"]
+  N -- "是" --> N0{"含价值/审美/愿景词?"}
+  N0 -- "是" --> Q["加载 say-show-boundary 先剥层"]
+  Q --> N1{"剥层后还有事实层?"}
+  N1 -- "是" --> O["加载 logical-grammar"]
+  N1 -- "否" --> Z["收口为取向/约束/可观察后果"]
+  N0 -- "否" --> N2{"对象/关系/状态/字段问题?"}
+  N2 -- "是" --> O
+  N2 -- "否" --> P["加载 truth-condition-checker"]
+  O --> P
   N -- "否" --> R{"是否快问快答/知识卡?"}
   R -- "是" --> S["加载 knowledge-card-qa"]
   R -- "否" --> T["不强行用 workskills，按普通任务处理"]

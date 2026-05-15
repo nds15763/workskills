@@ -14,6 +14,15 @@ description: >-
 
 目标不是禁止价值判断，而是防止 agent 把价值判断伪装成事实，污染后续决策。
 
+## 输入前置检查
+
+router 已经做了一道分流，但 router 可能判错或被绕过。本 skill 在开工前必须自检一次——这是冗余兜底，不是 router 的替代：
+
+- 输入是纯对象/关系/状态/字段问题（如 "X 字段能不能挂在 Y 表"）时，**转 `logical-grammar`**——这种句子里没有价值层可剥，让本 skill 判别会空转。
+- 输入是已成句、不含价值词的 claim / gate 真值问题时，**转 `truth-condition-checker`**。
+
+本 skill 只处理"含 价值/审美/愿景/伦理/方向感 词"或"明显是品味/偏好表达"的输入。
+
 ## 判断流程
 
 ```mermaid
@@ -101,3 +110,14 @@ flowchart LR
 - `logical-grammar`：先判断对象、关系、状态能不能合法组合。
 - `truth-condition-checker`：只处理可证伪的事实条件、gate 和 decision。
 - 本 skill：处理事实验证之外的价值、审美、愿景和边界表达。
+
+## 术语边界（Wittgenstein vs Hume）
+
+本 skill 借用 Tractatus 的 say/show 命名，但工程落点是 Hume 的 fact/value 二分（事实可证伪 vs 规范不可证伪）。
+
+| | Tractatus 原义 | 本 skill 工程化 |
+|---|---|---|
+| say | 事实命题（picture theory） | 事实命题（含可证伪事实/规则/推断） |
+| show | 逻辑形式自身显示 + 伦理 transcendental | 价值 / 审美 / 愿景 / 品味 / 方向感 / 伦理 |
+
+差异：Tractatus 的 show 主战场是"逻辑形式不能被语言说出来"，伦理只是子集；本 skill 把"任何不可被事实证据驱动的取向表达"都归 show。如果以 Tractatus 严格语义反驳本 skill，引此段说明：本 skill 借的是名词，落的是工程。
