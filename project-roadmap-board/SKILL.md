@@ -40,6 +40,7 @@ description: >-
 - Skill 入口：`submodules/skills/project-roadmap-board/SKILL.md`
 - 详细规则：`submodules/skills/project-roadmap-board/rules.md`
 - 标准范例：`submodules/skills/project-roadmap-board/examples.md`
+- 子环规划 / 建板视图 vs 执行视图 / IO-Gate 三件套 / details 子目录：`submodules/skills/project-roadmap-board/references/sub-ring-planning.md`（v2 补充，PRD 设计阶段必读）
 - 共享常量与几何工具：`submodules/skills/project-roadmap-board/geometry.py`
 - 自动校验脚本：`submodules/skills/project-roadmap-board/audit.py`
 - 正向布局生成脚本（JSON spec → .canvas）：`submodules/skills/project-roadmap-board/layout.py`
@@ -52,10 +53,15 @@ description: >-
 
 | 主线 | 干什么 | 主要章节 |
 |---|---|---|
-| **建板** | 从 PRD/OpenSpec 材料池抽事实卡，再收敛成“完成某件事”的闭环工作块 + 锚点 | 「路书第一语义」「建板六步法」「锚点写法速查」+ rules.md 0B–0H |
+| **建板** | 从 PRD/OpenSpec 材料池抽事实卡，再收敛成“完成某件事”的闭环工作块 + 锚点 | 「路书第一语义」「建板六步法」「锚点写法速查」+ rules.md 0B–0H + `references/sub-ring-planning.md`（v2 子环规划） |
 | **执行** | 围绕首环闭环推进 runtime group，传播颜色、处理未决点/错知识/子环、回写文档 | 「执行循环」「未决点演化速查」「错知识反路径速查」+ rules.md 1–20 |
 
 新建/重构路书时走「建板」；推进现有路书时走「执行」。
+
+**视图区分**（v2 补充，详见 `references/sub-ring-planning.md`）：
+- **建板视图**（planning）：所有 WB 都展开 runtime 子环（含 grey），父 WB 标 yellow 表示"结构已知 + 等待执行 或 执行中"；每个 runtime 节点遵守"实现 / 验证 / 证据"三件套；每个 task 对应 `details/T#.md` 详细设计文件，§2 强制写"输入 / 输出 / Gate"三件套。
+- **执行视图**（execution）：rule 6 严格生效，grey 节点不展开 runtime，灰→黄触发时才补 runtime（rule 3）。
+- **判定**：用户问"为什么 WB 是空的？"或"就一层吗？" → 是建板视图诉求，允许预画 grey 子环 + 父 WB 标 yellow；不要直接走 rule 6 拒绝。
 
 ## 核心原则
 
