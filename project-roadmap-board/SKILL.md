@@ -78,6 +78,7 @@ description: >-
 
 路书只消费已经类型化的知识：
 
+- PRD / OpenSpec 材料池如果包含新术语、规则句、同义词或 claim drift，先由 `canonical-claim-compiler` 编译成 accepted concepts / accepted claims；pending 不允许升首环。
 - `white / baseline` 可以进入锚点、Worker Pack 和转绿依据。
 - `gray / advisory` 只能作为风险、未决点或调查输入；不能直接让节点转绿。
 - `black / blocked` 必须被隔离；不能升首环、不能进 Worker Pack、不能作为锚点依据。
@@ -94,10 +95,10 @@ description: >-
 
 ### 建板原则
 
-- **可执行首环 = PRD 事实卡 + Obsidian 已有知识 + Curator 三色裁决**。首环不是"PRD 段落 + 直觉"，必须经过知识校准（规则 0CC）。
+- **可执行首环 = accepted claims + Obsidian 已有知识 + Curator 三色裁决**。首环不是"PRD 段落 + 直觉"，必须经过 canonical compile 和知识校准（规则 0CC）。
 - 事实卡不是愿景卡。`好看 / 高级 / 有趣 / 正确方向` 这类表达先交给 `say-show-boundary`，改成取向、约束、可观察后果和代价；不能直接升首环。
 - 路书只托管**进度状态**，不托管业务事实。
-- 新建/重构路书必须走完 `PRD/OpenSpec → 事实卡 → 功能候选 → 名词消歧 → 首环工作块 → runtime group 细节` 收敛链；禁止把 PRD 标题、页面名、表格行或段落机械直转成首环。
+- 新建/重构路书必须走完 `PRD/OpenSpec → canonical concept/claim → 事实卡 → 功能候选 → 名词消歧 → 首环工作块 → runtime group 细节` 收敛链；禁止把 PRD 标题、页面名、表格行或段落机械直转成首环。
 - **首环主干竖向排列**：`开始（最下）→ 工作块1 → 工作块2 → ... → 结束（最上）→ 根（弧线回环）`。**开始在下、结束在上，自下而上推进**（贴用户图 3）。首环只表达顶层顺序和状态，不承载运行时细节。
 - 首环规模默认控制在 **3-7 个工作块**：超过 7 再收敛一层主干，少于 3 检查是否糊死多个交付面。
 - 首环节点是工作块，不是资料摘抄；每个首环节点保留 **2-5 条带来源的纲要事实锚点**，用来说明该工作块为何存在、必须交付什么、边界是什么。
@@ -147,7 +148,9 @@ Canvas 可以放材料/说明节点来让人看清上下文，但它们不是业
 
 ## 建板六步法（建板主线核心）
 
-拿到 PRD/OpenSpec 时按以下六步收敛，对应 rules.md 0B–0H。核心链路是：**OpenSpec/PRD 材料池 → 事实卡 → 闭环工作块 → runtime group 可验收叶子**。**禁止跳步**。
+拿到 PRD/OpenSpec 时按以下六步收敛，对应 rules.md 0B–0H。核心链路是：**OpenSpec/PRD 材料池 → canonical concept/claim → 事实卡 → 闭环工作块 → runtime group 可验收叶子**。**禁止跳步**。
+
+建板前置：如果材料中出现新业务名词、同义词、规则句、OpenSpec claim_ref 或“已有知识检索不到”的风险，先读 `canonical-claim-compiler/SKILL.md`，拿到 accepted / pending 集合。accepted claim 可进事实卡；pending claim 只能进未决点或 Curator 裁决，不允许变成首环锚点。
 
 ### 第 1 步：抓动词（事实卡）
 
