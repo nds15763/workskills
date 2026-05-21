@@ -1,4 +1,0 @@
-interface:
-  display_name: "dq-be-tech-design"
-  short_description: "openspec tech_design 编写与评审规范"
-  default_prompt: "使用 $dq-be-tech-design 帮我起草或评审这个后端 change 的 tech_design.md。"

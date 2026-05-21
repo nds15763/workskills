@@ -249,7 +249,7 @@ How might we _________________________________？
 | Discover 阶段裁决素材白灰黑 | `project-knowledge-curator` |
 | 陈述卡 lock 后选解法 | `knowledge-card-qa` 扔 2-4 候选 |
 | 解法落地编排执行 | `project-roadmap-board` |
-| 后端涉及 tech_design | `dq-be-tech-design` |
+| 后端涉及 OpenSpec / 技术设计 | `dq-be-core:dq-be-tech-design`（plugin）+ 项目 `openspec/AGENTS.md` / `openspec-workflow` |
 
 ## 失败模式
 
