@@ -17,6 +17,7 @@ router 已经做了一道分流，但 router 可能判错或被绕过。本 skil
 
 - 输入是 `高级 / 自然 / 有趣 / 应该 / 更好` 等价值判断时，**先转 `say-show-boundary`**——价值不能写真值条件，只能写取向、约束、可观察后果。
 - 输入的对象/关系/状态还没成句时，**先转 `logical-grammar`** 改写，再回来拆条件。
+- 输入还没确定 `concept_id` / `claim_id`，或问题是“这是不是同一条 claim”时，**先转 `canonical-claim-compiler`**。本 skill 校验 truth condition，不裁决 identity。
 - 输入是开放式问题陈述（"我们要不要做 X"）时，**先转 `problem-statement-card`** 收窄。
 
 本 skill 只处理已经成句、已经剥层的可证伪命题。
@@ -30,6 +31,7 @@ router 已经做了一道分流，但 router 可能判错或被绕过。本 skil
 | decision | 拆成选择成立条件、退出条件、风险条件 |
 | incident conclusion | 拆成观测事实、因果条件、排除项 |
 | acceptance criteria | 拆成可观测信号和失败信号 |
+| accepted canonical claim | 校验 `truth_condition`、`local_truth_hash`、`closure_truth_hash` 与证据是否一致 |
 
 ## 判断流程
 
@@ -62,6 +64,9 @@ flowchart LR
 
 原判断：
 <claim / gate / decision>
+
+Claim ref（如有）：
+<claim_id + local_truth_hash + closure_truth_hash；没有则写 pending / none>
 
 真值条件：
 | 条件 | 类型 | 当前证据 | 反例/失败方式 | 状态 |
@@ -113,3 +118,4 @@ flowchart LR
 - 不要只找支持证据；必须写反例或失败方式。
 - 不要用兜底实现掩盖条件冲突；先解释为什么冲突会出现。
 - 不要把价值、审美、愿景硬拆成事实真值；交给 `say-show-boundary`。
+- 不要给 pending / disputed claim 直接下“成立”结论；先让 Curator 裁决语义状态。

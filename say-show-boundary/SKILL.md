@@ -20,6 +20,7 @@ router 已经做了一道分流，但 router 可能判错或被绕过。本 skil
 
 - 输入是纯对象/关系/状态/字段问题（如 "X 字段能不能挂在 Y 表"）时，**转 `logical-grammar`**——这种句子里没有价值层可剥，让本 skill 判别会空转。
 - 输入是已成句、不含价值词的 claim / gate 真值问题时，**转 `truth-condition-checker`**。
+- 输入来自 PRD / 设计稿，且需要把事实规则写入 Obsidian / OpenSpec / roadmap 时，事实层剥出来后必须交 `canonical-claim-compiler`，不要直接落 wiki。
 
 本 skill 只处理"含 价值/审美/愿景/伦理/方向感 词"或"明显是品味/偏好表达"的输入。
 
@@ -97,6 +98,16 @@ flowchart LR
 - 验证方式：可观测指标或用户测试。
 - 决策约束：即使指标相近，也优先选择解释成本低的方案。
 
+如果拆出的可说事实要进入 durable knowledge，继续走：
+
+```text
+say-show-boundary
+  -> canonical-claim-compiler
+  -> project-knowledge-curator
+```
+
+价值 / 审美 / 愿景只能成为 `claim_type=value/taste/vision/decision` 的 boundary claim，不能写成 accepted fact/rule。
+
 ## 常见反模式
 
 - 把“高级”“正确”“自然”“有趣”“克制”直接写进验收条件。
@@ -108,6 +119,7 @@ flowchart LR
 ## 与其他 skill 的关系
 
 - `logical-grammar`：先判断对象、关系、状态能不能合法组合。
+- `canonical-claim-compiler`：事实层要进入知识库、OpenSpec 或 roadmap 时，负责生成 concept / claim / pending / drift。
 - `truth-condition-checker`：只处理可证伪的事实条件、gate 和 decision。
 - 本 skill：处理事实验证之外的价值、审美、愿景和边界表达。
 

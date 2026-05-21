@@ -136,6 +136,7 @@ flowchart LR
 | 新反馈和旧决策打架 | 先分辨反馈类型 | L0/L1/新卡分流，不能一律重写 |
 | 低成本可逆尝试 | 不需要定义完整问题 | 直接试，记录反馈 |
 | 解法已清晰要选哪个 | 这是钻石 2 | 转 `knowledge-card-qa` |
+| 输入是 PRD / 新需求，且已经有明确规则句或业务对象 | 这不是 L0 问题定义 | 转 `canonical-claim-compiler` |
 | 排查 bug / 长材料 review | 这是事实重构 | 转 `problem-review-mapper` |
 
 ## 轻量卡模板
@@ -245,6 +246,7 @@ How might we _________________________________？
 | 场景 | 路由 |
 |---|---|
 | Discover 阶段画图理解材料 | `problem-review-mapper` 画事实链 |
+| PRD / 新需求里已经出现明确对象、动作、规则 | `canonical-claim-compiler` 编译 concept / claim |
 | Discover 阶段查现有素材 | `project-wiki` 跑 hit-detect |
 | Discover 阶段裁决素材白灰黑 | `project-knowledge-curator` |
 | 陈述卡 lock 后选解法 | `knowledge-card-qa` 扔 2-4 候选 |
