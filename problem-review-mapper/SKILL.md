@@ -45,6 +45,8 @@ flowchart LR
 
 如果材料牵涉业务域知识，图只能承载裁决过程；白/灰/黑、authority、Repair Loop 仍由 `project-knowledge-curator` 裁定。
 
+如果材料来自 PRD、设计稿、LLM 总结，或争议点是“是否同一个对象 / 是否同一条 claim / 是否发生 drift”，先用 `canonical-claim-compiler` 产出 `concept_id / claim_id / pending / drift_report`。本 skill 负责把证据链画清楚，不负责给 identity 立法。
+
 ## 三类逻辑校准
 
 本 skill 负责把三类逻辑校准压进图和裁决表，但不替代下游真源：
@@ -105,6 +107,7 @@ flowchart LR
 抽取规则：
 
 - 抓动词：去掉解释性和修饰性文字，只保留关键动作、动作对象和必要主语。
+- 过 identity：涉及 PRD / OpenSpec / Obsidian 同步时，先标出已有 `concept_id / claim_id`；没有 id 的节点只能标 pending，不能画成已确认事实。
 - 过语法：每个节点必须能说清对象、关系/动作、状态；说不清先拆句或改写，不要把混合概念画成主干。
 - 排顺序：按真实事件、操作约束、状态流转或因果依赖排序，不能凭直觉重排。
 - 连箭头：用箭头表达路径；遇到 `如果`、`是否`、`成功/失败` 时加判断节点。
@@ -170,6 +173,7 @@ flowchart LR
 | 细节分支 | 子步骤、动作对象、参与角色、关键事件 |
 | 裁决分支 | 对、不对、缺证据、应丢弃 |
 | 产物分支 | 代码改动、文档落点、索引、测试、回滚 |
+| identity 分支 | concept_id、claim_id、hash、pending、superseded |
 
 示例：
 

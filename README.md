@@ -15,10 +15,11 @@
 | 不知道该用哪个 skill | `workskills-router` |
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | review、排查、复盘、画图、感觉不对劲 | `problem-review-mapper` |
+| PRD/设计稿/LLM总结 需要先统一术语、concept、claim、drift | `canonical-claim-compiler` |
 | Obsidian、业务域、`#业务`、`[[功能点]]`、知识写回 | `project-wiki` |
 | 黑白灰、authority、Knowledge Pack、错知识退出 | `project-knowledge-curator` |
 | 路书、canvas、长任务 Loop、子环、状态颜色同步 | `project-roadmap-board` |
-| OpenSpec 后端 `tech_design.md`、库表、跨服务、架构评审 | `dq-be-tech-design` |
+| OpenSpec 后端 `tech_design.md`、库表、跨服务、架构评审 | `dq-be-core:dq-be-tech-design`（plugin，不在本仓库） |
 | 快问快答、说人话、知识卡、决策卡 | `knowledge-card-qa` |
 
 ## 渐进式加载
@@ -40,10 +41,10 @@
 workskills-router/             # 统一入口和智能路由
 problem-statement-card/        # 问题定义
 problem-review-mapper/         # 图优先 review / 排查 / 复盘
+canonical-claim-compiler/      # PRD/自然语言 -> concept_id / claim_id / canonical / drift
 project-wiki/                  # Obsidian Query / Ingest / Lint / SourceCheck
 project-knowledge-curator/     # 黑白灰、authority、Knowledge Pack、Repair Loop
 project-roadmap-board/         # Canvas 路书、长任务 Loop、状态事务
-dq-be-tech-design/             # 后端 tech_design.md
 knowledge-card-qa/             # 快问快答 / 知识卡
 ```
 

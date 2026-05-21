@@ -35,6 +35,7 @@ flowchart LR
 核心规则：
 
 - 原始上下文必须先能反查权威源，不能把聊天里的漂亮总结直接落成白知识。
+- 如果输入来自 PRD、设计稿、LLM 总结、术语漂移或 claim 分歧，先用 `canonical-claim-compiler` 判断 concept / claim / pending / drift。卡片只能复述这些状态，不能自己发明 canonical identity。
 - 决策场景下，卡片用于把候选、证据、风险和不做事项摆给用户拍板；agent 不替用户 lock。
 - 非决策场景下，卡片用于降低下次理解成本；默认实时解释，不默认存储。
 - 存储卡片前必须确认它是高频、高风险、容易误解，并且有可逆的证据链。
@@ -60,8 +61,9 @@ flowchart LR
 | 场景 | 动作 |
 |---|---|
 | 输入材料很长、需要裁决对错 | 先用 `problem-review-mapper` 抓动词、排顺序、连箭头 |
+| 输入材料是 PRD / 设计稿 / LLM 总结，或涉及术语不统一 | 先用 `canonical-claim-compiler` 输出 accepted / pending concept 和 claim |
 | 需要查业务域现有知识 | 按需用 `project-wiki` / `project-knowledge-curator` 找权威页和三色知识 |
-| 涉及 OpenSpec `tech_design.md` 裁决 | 用 `dq-be-tech-design` 或项目指定的 tech design 规则裁决 |
+| 涉及 OpenSpec / 技术设计裁决 | 用 `dq-be-core:dq-be-tech-design`（plugin）、项目 `openspec/AGENTS.md` 或项目指定的 tech design 规则裁决 |
 | 涉及测试、日志、运行证据 | 派 subagent 取证，主 agent 只回收并裁决 |
 
 ## 决策卡模式
@@ -80,6 +82,14 @@ flowchart LR
 | 失效条件 | 哪些事实变化后必须重验 |
 
 用户拍板后，才把被选项收敛成普通知识卡或写回对应权威源。
+
+如果候选涉及 canonical identity，临时决策卡还必须写：
+
+| 字段 | 写什么 |
+|---|---|
+| identity 状态 | `accepted / pending / disputed / superseded` |
+| claim_ref | `claim_id + local_truth_hash + closure_truth_hash`，没有就写 pending |
+| drift 类型 | lexical / concept identity / proposition / source / status / implementation |
 
 ## Loop 收口卡模式
 
@@ -162,7 +172,10 @@ flowchart LR
 - <旧知识、错字段、错链路、错状态>
 
 状态：
-<已落地 / 目标态 / 部分落地 / 待验证。灰知识必须说灰。>
+<已落地 / 目标态 / 部分落地 / 待验证。灰知识必须说灰。若关联 canonical claim，写 semantic_status / delivery_status / implementation_lifecycle。>
+
+Claim：
+<没有 canonical claim 就写“无”。有则写 claim_id、local_truth_hash、closure_truth_hash、accepted/pending/disputed/superseded、drift 状态。>
 
 逻辑校准：
 - 语法：<对象 / 动作 / 状态是否成句；不成句则不落卡>
@@ -170,7 +183,7 @@ flowchart LR
 - 边界：<哪些是事实，哪些只是价值/审美/愿景取向>
 
 证据：
-<文档、代码、日志、OpenSpec、用户确认。Obsidian 知识优先写业务域、#业务标签、[[功能点]]、claim_id 和 [[页面#^block-id]]；只有路径不够。>
+<文档、代码、日志、OpenSpec、用户确认。Obsidian 知识优先写业务域、#业务标签、[[功能点]]、claim_id / claim_ref 和 [[页面#^block-id]]；只有路径不够。>
 
 失效条件：
 <哪些文件、契约、任务状态或运行证据变化后，这张卡必须重验。>
@@ -187,6 +200,7 @@ flowchart LR
 - 说清“不做什么”，避免错知识继续污染上下文。
 - 证据等级要明显：白知识可直接答，灰知识标部分/待验证，黑知识进“丢弃”。
 - 能反向指回权威源；Obsidian 知识必须能从 `[[功能点]]` 点回 claim_ref，指不回去的卡不能存成白知识。
+- 有 canonical claim 时必须显示 claim 状态；不要把 pending / disputed 写成已确认。
 
 不要这样写：
 
@@ -194,6 +208,7 @@ flowchart LR
 - 不要只列字段名、表名、Todo；用户无法据此判断场景。
 - 不要把“我曾经答错了”混进最终卡片；只保留修正后的真相和被丢弃的旧说法。
 - 不要把目标态说成已落地。
+- 不要把未 accepted 的 pending claim 写成“已知事实”。
 - 不要为了完整而堆十几个问题；一张卡只解决一个困惑。
 
 ## 快速裁决表

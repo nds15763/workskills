@@ -2,9 +2,10 @@
 name: workskills-router
 description: >-
   本地 workskills 的统一入口和智能路由。用户没有明确说用哪个 skill，
-  但任务涉及问题定义、review/排查/复盘、Obsidian 知识库、黑白灰知识治理、
-  路书/canvas/长任务 Loop、OpenSpec 后端 tech_design、快问快答/知识卡，
-  或逻辑语法、真值条件、可说/展示边界校准时使用。
+  但任务涉及问题定义、review/排查/复盘、PRD/自然语言到 concept/claim 编译、
+  Obsidian 知识库、黑白灰知识治理、路书/canvas/长任务 Loop、
+  OpenSpec 协作、快问快答/知识卡，或逻辑语法、真值条件、
+  可说/展示边界校准时使用。
   本 skill 只做渐进式导读：先判断意图，选择并加载最小必要的下游 skill，
   避免一次性读取所有 workskills。
 ---
@@ -24,6 +25,7 @@ description: >-
   - `truth-condition-checker`：claim / node / gate / decision 什么条件下为真或为假。
   - `say-show-boundary`：事实命题与价值、审美、愿景、偏好边界。
 - 当用户前提不成立时，必须提示纠正：说明旧说法为什么不成立、当前证据支持什么、下一步如何改，不要只顺着用户继续执行。
+- PRD、设计稿、LLM 总结或用户自然语言要进入 Obsidian / OpenSpec / roadmap 前，先判是否需要 `canonical-claim-compiler`：它负责把 lexical 表达编译成 stable concept / claim / pending / drift，下游只消费 accepted 身份和命题。
 - 调度契约（discovery / fanout / subtask exec / pre-finish / skill authoring）见 `references/calibration-hooks.md`。本机 `context-compiler` 是该契约的一种实现，不是契约本身——换机器需重建本机实现，但契约和下游 skill 的"输入前置检查"段始终生效。这是 **router 判 + skill 自检** 双层冗余设计：接受重复，不接受逻辑失效。
 
 ## 快速路由
@@ -32,10 +34,11 @@ description: >-
 |---|---|---|
 | 问题模糊、方案太多、不踏实、好不好用/好不好看 | `problem-statement-card` | 需要证据校准时加 `problem-review-mapper` |
 | review、排查、复盘、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper` | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
+| PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
 | 黑白灰、authority、错知识退出、Conflict Verdict、Repair Loop | `project-knowledge-curator` | 需要实际查/写 vault 时加 `project-wiki` |
 | 路书、canvas、进度板、长任务 Loop、子环、状态颜色同步 | `project-roadmap-board` | 涉及业务事实时加 `project-wiki` + `project-knowledge-curator` |
-| OpenSpec、后端技术方案、`tech_design.md`、库表/schema、跨服务、架构评审 | `dq-be-tech-design` | 业务事实不清时加 `project-wiki`；执行图需要加 `project-roadmap-board` |
+| OpenSpec、后端技术方案、库表/schema、跨服务、架构评审 | `dq-be-core:dq-be-tech-design`（plugin）或项目 `openspec/AGENTS.md` / `openspec-workflow` | 业务事实不清时加 `project-wiki`；执行图需要加 `project-roadmap-board` |
 | 快问快答、说人话、知识卡、决策卡、是否落卡 | `knowledge-card-qa` | 先用对应取证 skill 得到证据，再压缩表达 |
 | 对象/关系/状态/字段/任务拆分能不能这样连 | `logical-grammar` | 语法合法后再转 `truth-condition-checker` 或领域 skill |
 | claim、gate、结论、验收口径是否成立，哪里矛盾 | `truth-condition-checker` | 需要事实证据时加 `problem-review-mapper` / `project-knowledge-curator` |
@@ -45,7 +48,11 @@ description: >-
 
 ```mermaid
 flowchart TD
-  A["用户请求"] --> B{"是否模糊开放?"}
+  A["用户请求"] --> A0{"是否 PRD/术语/claim/同步/drift?"}
+  A0 -- "是" --> A1["加载 canonical-claim-compiler"]
+  A1 --> A2["产出 concept/claim/pending/drift 后再选下游"]
+  A2 --> B
+  A0 -- "否" --> B{"是否模糊开放?"}
   B -- "是" --> C["加载 problem-statement-card"]
   B -- "否" --> D{"是否 review/排查/复盘?"}
   D -- "是" --> E["加载 problem-review-mapper"]
@@ -55,8 +62,8 @@ flowchart TD
   H -- "是" --> I["追加 project-knowledge-curator"]
   F -- "否" --> J{"是否路书/长任务/canvas?"}
   J -- "是" --> K["加载 project-roadmap-board"]
-  J -- "否" --> L{"是否后端 tech_design/OpenSpec?"}
-  L -- "是" --> M["加载 dq-be-tech-design"]
+  J -- "否" --> L{"是否 OpenSpec/后端设计?"}
+  L -- "是" --> M["加载 dq-be-core:dq-be-tech-design 或读项目 OpenSpec 指南"]
   L -- "否" --> N{"是否逻辑校准?"}
   N -- "是" --> N0{"含价值/审美/愿景词?"}
   N0 -- "是" --> Q["加载 say-show-boundary 先剥层"]
@@ -83,11 +90,12 @@ flowchart TD
 
 ### Obsidian 知识导读 / 写回
 
-1. 读 `project-wiki/SKILL.md`
-2. 结构问题才读 `project-wiki/references/vault-structure.md`
-3. claim/span 引用校验才读 `project-wiki/references/obsidian-sourcecheck.md`
-4. 三色治理才读 `project-knowledge-curator/SKILL.md`
-5. Knowledge Pack 模板才读 `project-knowledge-curator/references/knowledge-pack-template.md`
+1. 如果输入是 PRD / 设计稿 / LLM 总结 / 术语漂移，先读 `canonical-claim-compiler/SKILL.md`
+2. 读 `project-wiki/SKILL.md`
+3. 结构问题才读 `project-wiki/references/vault-structure.md`
+4. claim/span 引用校验才读 `project-wiki/references/obsidian-sourcecheck.md`
+5. 三色治理才读 `project-knowledge-curator/SKILL.md`
+6. Knowledge Pack 模板才读 `project-knowledge-curator/references/knowledge-pack-template.md`
 
 Obsidian 知识身份顺序固定：
 
@@ -97,24 +105,44 @@ Obsidian 知识身份顺序固定：
 
 `path + line` 只能做物理定位，不能当知识身份。
 
+### PRD / identity / claim 编译
+
+1. 读 `canonical-claim-compiler/SKILL.md`
+2. 先输出 `pending_terms / pending_claims / accepted_concepts / accepted_claims / drift_report`
+3. 需要查已有或写 vault 时追加 `project-wiki`
+4. 需要 accept / merge / reject / supersede 时追加 `project-knowledge-curator`
+5. 需要把 accepted claims 转成闭环工作块时追加 `project-roadmap-board`
+6. 需要写后端 OpenSpec / 技术设计时，转 `dq-be-core:dq-be-tech-design`（plugin）、项目 `openspec/AGENTS.md` 或 `openspec-workflow`
+7. 需要给用户做人话裁决时追加 `knowledge-card-qa`
+
+固定边界：
+
+- `canonical-claim-compiler` 不替人裁决 identity；它只提议。
+- `project-wiki` 不裁决 claim 真伪；它只做 IO 和 SourceCheck。
+- `project-knowledge-curator` 承接人或 owner 的裁决，把 identity / claim 进入三色治理。
+- `project-roadmap-board` 只消费 accepted claims 和 Knowledge Pack，不从 raw PRD 直接升首环。
+
 ### 长任务 / 路书
 
-1. 读 `project-roadmap-board/SKILL.md`
-2. 建板、审计、颜色传播细节才读 `project-roadmap-board/rules.md`
-3. 需要画法示例才读 `project-roadmap-board/examples.md`
-4. 生成/校验 `.canvas` 优先运行 `layout.py` / `audit.py`
-5. 涉及业务事实时追加 `project-wiki` + `project-knowledge-curator`
+1. 如果从 PRD / OpenSpec 材料池建板，先读 `canonical-claim-compiler/SKILL.md`
+2. 读 `project-roadmap-board/SKILL.md`
+3. 建板、审计、颜色传播细节才读 `project-roadmap-board/rules.md`
+4. 需要画法示例才读 `project-roadmap-board/examples.md`
+5. 生成/校验 `.canvas` 优先运行 `layout.py` / `audit.py`
+6. 涉及业务事实时追加 `project-wiki` + `project-knowledge-curator`
 
 每轮 Loop 必须先回写 `.canvas` 再继续派工；新增任务链先落 runtime group，开始处理再建子环，颜色、edge、group label/color 同批同步。
 
 ### OpenSpec / 后端技术方案
 
-1. 读 `dq-be-tech-design/SKILL.md`
-2. 只在对应章节触发时读它的 references
-3. 业务事实不清时追加 `project-wiki` / `project-knowledge-curator`
-4. 如果方案要转执行闭环，再追加 `project-roadmap-board`
+1. 如果 OpenSpec 来自 PRD、设计稿或业务 claim，同步前先读 `canonical-claim-compiler/SKILL.md`
+2. 后端 `tech_design.md` / 库表 / 跨服务 / 架构评审优先加载 `dq-be-core:dq-be-tech-design` plugin
+3. 同时按当前项目的 `openspec/AGENTS.md` 或项目级 OpenSpec 指南执行；本仓库不再托管 `tech_design.md` 模板
+4. 若两者冲突，优先级固定为：`dq-be-core:dq-be-tech-design` plugin → 项目 `openspec/AGENTS.md` → 通用 `openspec-workflow`
+5. 业务事实不清时追加 `project-wiki` / `project-knowledge-curator`
+6. 如果方案要转执行闭环，再追加 `project-roadmap-board`
 
-`tech_design.md` 是 OpenSpec change 的技术证据，不是业务知识库。
+OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 
 ### 快问快答 / 知识卡
 
@@ -144,10 +172,10 @@ Obsidian 知识身份顺序固定：
 |---|---|---|
 | `problem-statement-card` | 把开放问题压成可执行问题陈述 | 不替代取证、实现、知识治理 |
 | `problem-review-mapper` | 图优先 review / 排查 / 复盘 / 多证据收敛 | 不维护业务知识真源 |
+| `canonical-claim-compiler` | 把 PRD/自然语言编译成 concept_id、claim_id、pending、drift、claim_ref | 不写代码，不替人裁决 identity，不直接写 vault |
 | `project-wiki` | Obsidian Query / Ingest / Lint / SourceCheck 工具层 | 不裁决黑白灰，不替用户拍板 |
 | `project-knowledge-curator` | 三色知识、authority、Knowledge Pack、Repair Loop | 不直接写代码，不替代 vault IO |
 | `project-roadmap-board` | Obsidian Canvas 路书、闭环工作块、Loop 状态事务 | 不托管业务事实 |
-| `dq-be-tech-design` | 后端 `tech_design.md` 章节、评审、OpenSpec 技术证据 | 不做业务知识库 |
 | `knowledge-card-qa` | 把已校验结论压成人话卡/决策卡 | 不制造新事实，不替代权威源 |
 | `logical-grammar` | 判断对象/关系/状态/动作是否合法组合 | 不判断真假，不替代证据 |
 | `truth-condition-checker` | 拆真值条件、找反例、找矛盾 | 不修语法错误，不处理纯价值判断 |
@@ -156,7 +184,9 @@ Obsidian 知识身份顺序固定：
 ## 反模式
 
 - 用户没说业务域时直接写代码方案。
-- 一开始把 `project-wiki`、`curator`、`roadmap`、`tech_design` 全读进来。
+- 一开始把 `project-wiki`、`curator`、`roadmap`、OpenSpec 指南全读进来。
+- PRD 还没编译 concept / claim，就直接写 Obsidian、OpenSpec 或 roadmap。
+- 让 LLM 用同义词自由复述 accepted 术语，再指望 Obsidian 搜索自动理解。
 - 把 Obsidian 的 `path + line` 当成知识身份，跳过业务域、`#业务域`、`[[功能点]]`。
 - 把 SourceCheck `ok` 当成白知识。
 - 把 roadmap 当 PRD 摘要或 agent Todo。
@@ -170,6 +200,8 @@ Obsidian 知识身份顺序固定：
 
 ```text
 模糊先定问题；
+PRD 先编 identity；
+遇到分歧先分 drift；
 语法不通先改句；
 结论要写真值；
 价值审美只 show 不伪装事实；
@@ -177,6 +209,6 @@ Obsidian 知识身份顺序固定：
 知识先查 wiki；
 能不能用交 curator；
 长任务上 roadmap；
-后端设计写 tech_design；
+OpenSpec 读项目指南；
 最后才压快问快答。
 ```
