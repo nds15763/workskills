@@ -265,6 +265,50 @@ closure_truth_hash: sha256(canonical_serialize({
 - 序列化必须 deterministic，优先用 RFC 8785 JCS 或等价 canonical JSON。
 - claim dependency 必须是 DAG；出现环时先拆 claim，不要用工程兜底绕过。
 
+## Scripts / CLI
+
+随本 skill 提供 `scripts/claim-hash.py`，是 hash 算法的参考实现，也是 drift 检测器的底座。
+
+### 用法
+
+```bash
+# Dry-run: 算单个文件 hash，print 到 stdout（不写回）
+python3 scripts/claim-hash.py <vault>/_glossary/concepts/morph66.action.poison.yml
+
+# 写回单个文件
+python3 scripts/claim-hash.py <vault>/_glossary/concepts/morph66.action.poison.yml --update
+
+# 批量算所有：先 concepts/, 再 claims/（拓扑顺序）
+python3 scripts/claim-hash.py --all <vault>/_glossary --update
+
+# 校验所有 hash 是否 drift（CI 用）
+python3 scripts/claim-hash.py --all <vault>/_glossary --verify
+# exit 0 = 全部 clean
+# exit 1 = 至少一处 drift
+# exit 2 = schema 缺字段
+# exit 3 = I/O 错误
+```
+
+### 行为
+
+- 自动跳过 `semantic_status: proposed` 或 `pending`（hash 不冻结）
+- claim 的 `concept_refs` 必须带 `identity_hash`（缺则 ERR）—— 先跑 concept hash
+- claim 的 `depends_on` 必须带 `closure_truth_hash`（缺则 ERR）—— 拓扑顺序：被依赖 claim 先算
+- 出现环 → 报错 `DAG required: no cycles`
+- 算法近似 RFC 8785 JCS：sorted keys / no whitespace / utf-8 / sha256
+
+### CI 集成
+
+最小用法（在 narnia-docs-kim 仓库的 CI 里）：
+
+```yaml
+- name: claim-hash drift check
+  run: |
+    python3 path/to/claim-hash.py --all _glossary --verify
+```
+
+drift 时 CI 失败，触发 review PR 由人裁决"实现还成不成立"。
+
 ## OpenSpec 输出
 
 OpenSpec 可以保留自然语言，但必须绑定 claim_ref：
