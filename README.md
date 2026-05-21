@@ -19,7 +19,6 @@
 | Obsidian、业务域、`#业务`、`[[功能点]]`、知识写回 | `project-wiki` |
 | 黑白灰、authority、Knowledge Pack、错知识退出 | `project-knowledge-curator` |
 | 路书、canvas、长任务 Loop、子环、状态颜色同步 | `project-roadmap-board` |
-| OpenSpec 后端 `tech_design.md`、库表、跨服务、架构评审 | `dq-be-core:dq-be-tech-design`（plugin，不在本仓库） |
 | 快问快答、说人话、知识卡、决策卡 | `knowledge-card-qa` |
 
 ## 渐进式加载
