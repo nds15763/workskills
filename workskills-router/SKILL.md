@@ -41,7 +41,7 @@ description: >-
 | OpenSpec、后端技术方案、库表/schema、跨服务、架构评审 | `dq-be-core:dq-be-tech-design`（plugin）或项目 `openspec/AGENTS.md` / `openspec-workflow` | 业务事实不清时加 `project-wiki`；执行图需要加 `project-roadmap-board` |
 | 快问快答、说人话、知识卡、决策卡、是否落卡 | `knowledge-card-qa` | 先用对应取证 skill 得到证据，再压缩表达 |
 | 对象/关系/状态/字段/任务拆分能不能这样连 | `logical-grammar` | 语法合法后再转 `truth-condition-checker` 或领域 skill |
-| claim、gate、结论、验收口径是否成立，哪里矛盾 | `truth-condition-checker` | 需要事实证据时加 `problem-review-mapper` / `project-knowledge-curator` |
+| claim、gate、结论、验收口径是否成立，哪里矛盾，证伪/反向审查/怎么推翻这条链 | `truth-condition-checker` | 需要事实证据时加 `problem-review-mapper` / `project-knowledge-curator` |
 | “好/坏/高级/自然/有趣/方向正确”等价值或审美判断 | `say-show-boundary` | 开放问题加 `problem-statement-card`；决策表达加 `knowledge-card-qa` |
 
 ## 路由流程
@@ -203,7 +203,7 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 PRD 先编 identity；
 遇到分歧先分 drift；
 语法不通先改句；
-结论要写真值；
+结论要写真值，证伪反着审一趟；
 价值审美只 show 不伪装事实；
 排查先画图；
 知识先查 wiki；
