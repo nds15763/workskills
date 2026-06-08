@@ -33,6 +33,7 @@ description: >-
 | 用户在问什么 | 主 skill | 追加条件 |
 |---|---|---|
 | 问题模糊、方案太多、不踏实、好不好用/好不好看 | `problem-statement-card` | 需要证据校准时加 `problem-review-mapper` |
+| 在多个方案里挑/排序、"哪个更好/选哪个/先做哪个/我喜欢哪个"、凭"什么好做"挑东西 | `decision-tripwire` | 标准立完要排序时加 `problem-statement-card`；要落卡时加 `knowledge-card-qa` |
 | review、排查、复盘、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper` | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
 | PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
@@ -171,6 +172,7 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 | Skill | 负责 | 不负责 |
 |---|---|---|
 | `problem-statement-card` | 把开放问题压成可执行问题陈述 | 不替代取证、实现、知识治理 |
+| `decision-tripwire` | 决策前拦一道：查起跳点（物本位 vs 目的本位）、逼出"赢的标准"节点、抓假互斥/串行化 | 不替用户拍板，不立完标准就替他排序 |
 | `problem-review-mapper` | 图优先 review / 排查 / 复盘 / 多证据收敛 | 不维护业务知识真源 |
 | `canonical-claim-compiler` | 把 PRD/自然语言编译成 concept_id、claim_id、pending、drift、claim_ref | 不写代码，不替人裁决 identity，不直接写 vault |
 | `project-wiki` | Obsidian Query / Ingest / Lint / SourceCheck 工具层 | 不裁决黑白灰，不替用户拍板 |
