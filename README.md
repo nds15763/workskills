@@ -16,7 +16,7 @@
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | 在多个方案里挑/排序、"哪个更好/先做哪个/我喜欢/X好做" | `decision-tripwire` |
 | 思路乱了/想法太多/对话记录要收敛成一版范围、砍方案、各执一词 | `three-rulers` |
-| review、排查、复盘、画图、感觉不对劲 | `problem-review-mapper` |
+| review、排查、复盘、归因、真因、多猜想竞争、画证据态势图 | `problem-review-mapper` |
 | PRD/设计稿/LLM总结 需要先统一术语、concept、claim、drift | `canonical-claim-compiler` |
 | Obsidian、业务域、`#业务`、`[[功能点]]`、知识写回 | `project-wiki` |
 | 黑白灰、authority、Knowledge Pack、错知识退出 | `project-knowledge-curator` |
@@ -36,6 +36,15 @@
 
 不要一开始全读所有 skill。下游规则以各自 `SKILL.md` 为准。
 
+## 关键图型
+
+| 图型 | 用在什么时候 | 入口 |
+|---|---|---|
+| 证据态势图 | 原因不明、多猜想竞争、需要看证据如何更新判断 | `problem-review-mapper` |
+| 流程放射图 | 材料很多但主要问题是顺序、阶段和细节挂载 | `problem-review-mapper` |
+| 真值依赖图 | 单条 claim / gate / decision 是否成立、需要反向证伪 | `truth-condition-checker` |
+| roadmap runtime group | 长任务、挂起调研、执行闭环和状态颜色推进 | `project-roadmap-board` |
+
 ## 目录
 
 ```text
@@ -43,7 +52,7 @@ workskills-router/             # 统一入口和智能路由
 problem-statement-card/        # 问题定义
 decision-tripwire/             # 决策起跳点警报器:物本位 vs 目的本位,逼出"赢的标准"
 three-rulers/                  # 三把尺:批量候选收敛,摊牌→立尺→过筛→停车场
-problem-review-mapper/         # 图优先 review / 排查 / 复盘
+problem-review-mapper/         # 图优先 review / 排查 / 复盘；判断态势用证据态势图，讲顺序用流程放射图
 canonical-claim-compiler/      # PRD/自然语言 -> concept_id / claim_id / canonical / drift
 project-wiki/                  # Obsidian Query / Ingest / Lint / SourceCheck
 project-knowledge-curator/     # 黑白灰、authority、Knowledge Pack、Repair Loop
