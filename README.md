@@ -15,6 +15,7 @@
 | 不知道该用哪个 skill | `workskills-router` |
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | 在多个方案里挑/排序、"哪个更好/先做哪个/我喜欢/X好做" | `decision-tripwire` |
+| 思路乱了/想法太多/对话记录要收敛成一版范围、砍方案、各执一词 | `three-rulers` |
 | review、排查、复盘、画图、感觉不对劲 | `problem-review-mapper` |
 | PRD/设计稿/LLM总结 需要先统一术语、concept、claim、drift | `canonical-claim-compiler` |
 | Obsidian、业务域、`#业务`、`[[功能点]]`、知识写回 | `project-wiki` |
@@ -41,6 +42,7 @@
 workskills-router/             # 统一入口和智能路由
 problem-statement-card/        # 问题定义
 decision-tripwire/             # 决策起跳点警报器:物本位 vs 目的本位,逼出"赢的标准"
+three-rulers/                  # 三把尺:批量候选收敛,摊牌→立尺→过筛→停车场
 problem-review-mapper/         # 图优先 review / 排查 / 复盘
 canonical-claim-compiler/      # PRD/自然语言 -> concept_id / claim_id / canonical / drift
 project-wiki/                  # Obsidian Query / Ingest / Lint / SourceCheck

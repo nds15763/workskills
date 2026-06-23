@@ -34,6 +34,7 @@ description: >-
 |---|---|---|
 | 问题模糊、方案太多、不踏实、好不好用/好不好看 | `problem-statement-card` | 需要证据校准时加 `problem-review-mapper` |
 | 在多个方案里挑/排序、"哪个更好/选哪个/先做哪个/我喜欢哪个"、凭"什么好做"挑东西 | `decision-tripwire` | 标准立完要排序时加 `problem-statement-card`；要落卡时加 `knowledge-card-qa` |
+| 甩来对话记录/一堆想法说"思路乱了/想法太多/帮我收敛"、反馈/候选（≥3）要收敛成一版范围、砍方案、（多人或一人不同时刻）各执一词 | `three-rulers` | 锁尺时加 `knowledge-card-qa`；单点取舍转 `decision-tripwire` |
 | review、排查、复盘、归因、真因、为什么坏/为什么挂、线上 bug、排错、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper`（按贝叶斯排查表走） | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
 | PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
@@ -49,12 +50,14 @@ description: >-
 
 排查 = 在一堆猜想里用最少验证次数找真因。路由到 `problem-review-mapper` 后按**贝叶斯排查表**走，router 只立口径、不实现表：
 
+- 原因不明 / 多猜想竞争 / 调研推进时，默认要求 `problem-review-mapper` 先画**证据态势图**：同图展示猜想、先验、诊断性证据、混杂、挂起调研和下一验。
+- 材料很多但主要问题是顺序和阶段时，用**流程放射图**；单条 claim / gate / decision 是否成立时，转 `truth-condition-checker` 写真值条件和反向证伪。
 - 每个猜想只能处于 `排除 / 走弱 / 挂起 / 领先 / 确认` 五态之一；决断 = 刷状态，不是"选一个答案"。
 - 每次刷新状态必须写清「**这条证据只覆盖到哪一层**」——证据打到哪层只能排到哪层，禁止整包排除。
 - `领先 ≠ 确认`：单样本 / 跨次方差大的领先不能拿去当根因改代码。
 - 两个猜想下都会出现的证据，似然比 ≈ 1，不许更新判断（"查了半天等于没查"）。
 
-表、卡模板、状态机定义在 `problem-review-mapper`。
+图型、表、卡模板、状态机定义在 `problem-review-mapper`。
 
 ## 路由流程
 
@@ -66,7 +69,9 @@ flowchart TD
   A2 --> B
   A0 -- "否" --> B{"是否模糊开放?"}
   B -- "是" --> C["加载 problem-statement-card"]
-  B -- "否" --> D{"是否 review/排查/复盘?"}
+  B -- "否" --> B2{"是否多候选 / 想法收敛?"}
+  B2 -- "是" --> B3["加载 three-rulers"]
+  B2 -- "否" --> D{"是否 review/排查/复盘?"}
   D -- "是" --> E["加载 problem-review-mapper"]
   D -- "否" --> F{"是否知识库/Obsidian?"}
   F -- "是" --> G["加载 project-wiki"]
@@ -184,6 +189,7 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 |---|---|---|
 | `problem-statement-card` | 把开放问题压成可执行问题陈述 | 不替代取证、实现、知识治理 |
 | `decision-tripwire` | 决策前拦一道：查起跳点（物本位 vs 目的本位）、逼出"赢的标准"节点、抓假互斥/串行化 | 不替用户拍板，不立完标准就替他排序 |
+| `three-rulers` | 批量候选/想法收敛：原话留源→洞察升维→立尺→强度梯子/座位矩阵→裁决跟尺走→停车场 | 不替用户锁尺；尺锁定后的推导裁决由它填；单点取舍不归它管 |
 | `problem-review-mapper` | 图优先 review / 排查 / 复盘 / 多证据收敛 | 不维护业务知识真源 |
 | `canonical-claim-compiler` | 把 PRD/自然语言编译成 concept_id、claim_id、pending、drift、claim_ref | 不写代码，不替人裁决 identity，不直接写 vault |
 | `project-wiki` | Obsidian Query / Ingest / Lint / SourceCheck 工具层 | 不裁决黑白灰，不替用户拍板 |
@@ -222,7 +228,8 @@ PRD 先编 identity；
 语法不通先改句；
 结论要写真值，证伪反着审一趟；
 价值审美只 show 不伪装事实；
-排查先画图，先刷猜想五态，说清证据覆盖到哪层；
+排查先画证据态势图，先刷猜想五态，说清证据覆盖到哪层；
+讲顺序才用流程放射图；
 知识先查 wiki；
 能不能用交 curator；
 长任务上 roadmap；
