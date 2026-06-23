@@ -34,7 +34,7 @@ description: >-
 |---|---|---|
 | 问题模糊、方案太多、不踏实、好不好用/好不好看 | `problem-statement-card` | 需要证据校准时加 `problem-review-mapper` |
 | 在多个方案里挑/排序、"哪个更好/选哪个/先做哪个/我喜欢哪个"、凭"什么好做"挑东西 | `decision-tripwire` | 标准立完要排序时加 `problem-statement-card`；要落卡时加 `knowledge-card-qa` |
-| review、排查、复盘、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper` | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
+| review、排查、复盘、归因、真因、为什么坏/为什么挂、线上 bug、排错、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper`（按贝叶斯排查表走） | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
 | PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
 | 黑白灰、authority、错知识退出、Conflict Verdict、Repair Loop | `project-knowledge-curator` | 需要实际查/写 vault 时加 `project-wiki` |
@@ -44,6 +44,17 @@ description: >-
 | 对象/关系/状态/字段/任务拆分能不能这样连 | `logical-grammar` | 语法合法后再转 `truth-condition-checker` 或领域 skill |
 | claim、gate、结论、验收口径是否成立，哪里矛盾，证伪/反向审查/怎么推翻这条链 | `truth-condition-checker` | 需要事实证据时加 `problem-review-mapper` / `project-knowledge-curator` |
 | “好/坏/高级/自然/有趣/方向正确”等价值或审美判断 | `say-show-boundary` | 开放问题加 `problem-statement-card`；决策表达加 `knowledge-card-qa` |
+
+## 贝叶斯排查口径（排查/归因类专用）
+
+排查 = 在一堆猜想里用最少验证次数找真因。路由到 `problem-review-mapper` 后按**贝叶斯排查表**走，router 只立口径、不实现表：
+
+- 每个猜想只能处于 `排除 / 走弱 / 挂起 / 领先 / 确认` 五态之一；决断 = 刷状态，不是"选一个答案"。
+- 每次刷新状态必须写清「**这条证据只覆盖到哪一层**」——证据打到哪层只能排到哪层，禁止整包排除。
+- `领先 ≠ 确认`：单样本 / 跨次方差大的领先不能拿去当根因改代码。
+- 两个猜想下都会出现的证据，似然比 ≈ 1，不许更新判断（"查了半天等于没查"）。
+
+表、卡模板、状态机定义在 `problem-review-mapper`。
 
 ## 路由流程
 
@@ -197,6 +208,10 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 - 对象关系还没成句就开始查真假。
 - 把未知真值条件默认当真。
 - 把价值、审美、愿景包装成“已验证事实”。
+- 把代理证据当目标证据（fixture 过 / OpenSpec validate 过 / 文件存在 / stickerUri 有值 / embedding row 有了 → 当成真机通过、用户真看到有效贴纸）。
+- 把粗猜想整包排除（"网络排除了""VLM 排除了""UI 没问题"——证据只打到一个子机制，却记成整包否掉）。
+- 把 pending 当 fact（OpenSpec validate / runbook / harness green / fixture pass 只是某一层 ready，不是真值闭合）。
+- 让同一个 worker 查现状 + 改代码 + 跑验证 + 写总结（证据面没有独立性，必然自证完成）。
 
 ## 入口口诀
 
@@ -207,7 +222,7 @@ PRD 先编 identity；
 语法不通先改句；
 结论要写真值，证伪反着审一趟；
 价值审美只 show 不伪装事实；
-排查先画图；
+排查先画图，先刷猜想五态，说清证据覆盖到哪层；
 知识先查 wiki；
 能不能用交 curator；
 长任务上 roadmap；
