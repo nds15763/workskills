@@ -20,6 +20,7 @@ description: >-
 - 只有当主 skill 明确需要业务知识、路书、OpenSpec、卡片沉淀或引用校验时，才追加第二个 skill。
 - 先读下游 skill 的 `SKILL.md`；只有触发到细节，才读 `references/*` 或运行 `scripts/*`。
 - 不要一次性读取整个 `/Users/kim/code/workskills`。
+- 对于多步链路、可见结果或用户表象需要校准的任务，先走 `stage-evidence-gate` 做跨语言证据门：记录用户现象，编译共通概念/claim，选择本轮证据面和停止条件。router 不硬编码实现侧语言；具体实现词只能在当前项目证据计划或示例里出现。
 - 三类逻辑审计先做分流，不在 router 里实现规则：
   - `logical-grammar`：对象 / 关系 / 状态 / 动作能不能合法组合。
   - `truth-condition-checker`：claim / node / gate / decision 什么条件下为真或为假。
@@ -27,6 +28,21 @@ description: >-
 - 当用户前提不成立时，必须提示纠正：说明旧说法为什么不成立、当前证据支持什么、下一步如何改，不要只顺着用户继续执行。
 - PRD、设计稿、LLM 总结或用户自然语言要进入 Obsidian / OpenSpec / roadmap 前，先判是否需要 `canonical-claim-compiler`：它负责把 lexical 表达编译成 stable concept / claim / pending / drift，下游只消费 accepted 身份和命题。
 - 调度契约（discovery / fanout / subtask exec / pre-finish / skill authoring）见 `references/calibration-hooks.md`。本机 `context-compiler` 是该契约的一种实现，不是契约本身——换机器需重建本机实现，但契约和下游 skill 的"输入前置检查"段始终生效。这是 **router 判 + skill 自检** 双层冗余设计：接受重复，不接受逻辑失效。
+
+## 四方对齐方法链
+
+这套实践不是单个 E2E skill。`stage-evidence-gate` 只负责多步链路的证据门，其他环节分别由下游 skill 承担：
+
+| 方法环节 | 典型问题 | 主 skill |
+|---|---|---|
+| 问题成形 | 我到底在解决什么、成功/失败信号是什么 | `problem-statement-card` |
+| 概念对齐 | 这是不是同一个对象/claim，语义有没有漂移 | `canonical-claim-compiler` |
+| 证据门 | 用户现象、共通概念和当前证据面是否互相解释 | `stage-evidence-gate` |
+| 多猜想裁决 | 哪个解释领先、走弱、挂起，下一验是什么 | `problem-review-mapper` |
+| 真值/边界 | 结论什么条件下为真，哪些只是价值/审美取向 | `truth-condition-checker` / `say-show-boundary` |
+| 人话沉淀 | 本轮到底学到了什么，是否需要落卡 | `knowledge-card-qa` |
+
+原则：先把用户现象改写成共通概念和可裁决 claim，再选择证据面；实现侧语言只能作为当前项目的证据投影，不能升级成通用方法准则。
 
 ## 快速路由
 
@@ -36,6 +52,7 @@ description: >-
 | 在多个方案里挑/排序、"哪个更好/选哪个/先做哪个/我喜欢哪个"、凭"什么好做"挑东西 | `decision-tripwire` | 标准立完要排序时加 `problem-statement-card`；要落卡时加 `knowledge-card-qa` |
 | 甩来对话记录/一堆想法说"思路乱了/想法太多/帮我收敛"、反馈/候选（≥3）要收敛成一版范围、砍方案、（多人或一人不同时刻）各执一词 | `three-rulers` | 锁尺时加 `knowledge-card-qa`；单点取舍转 `decision-tripwire` |
 | review、排查、复盘、归因、真因、为什么坏/为什么挂、线上 bug、排错、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper`（按贝叶斯排查表走） | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
+| 多步链路、可见结果或 E2E “过了但不知道证明了什么”，需要把用户表象语言翻译成共通概念和本轮证据面 | `stage-evidence-gate` | 根因不明或多猜想竞争时加 `problem-review-mapper`；术语/claim 漂移时先加 `canonical-claim-compiler`；要落 OpenSpec 时再按项目指南 |
 | PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
 | 黑白灰、authority、错知识退出、Conflict Verdict、Repair Loop | `project-knowledge-curator` | 需要实际查/写 vault 时加 `project-wiki` |
@@ -54,10 +71,10 @@ description: >-
 - 材料很多但主要问题是顺序和阶段时，用**流程放射图**；单条 claim / gate / decision 是否成立时，转 `truth-condition-checker` 写真值条件和反向证伪。
 - 每个猜想只能处于 `排除 / 走弱 / 挂起 / 领先 / 确认` 五态之一；决断 = 刷状态，不是"选一个答案"。
 - 每次刷新状态必须写清「**这条证据只覆盖到哪一层**」——证据打到哪层只能排到哪层，禁止整包排除。
-- `领先 ≠ 确认`：单样本 / 跨次方差大的领先不能拿去当根因改代码。
+- `领先 ≠ 确认`：单样本 / 跨次方差大的领先不能拿去当根因改实现。
 - 两个猜想下都会出现的证据，似然比 ≈ 1，不许更新判断（"查了半天等于没查"）。
 
-图型、表、卡模板、状态机定义在 `problem-review-mapper`。
+图型、表、卡模板和猜想五态定义在 `problem-review-mapper`。
 
 ## 路由流程
 
@@ -104,6 +121,18 @@ flowchart TD
 2. 如果图里的 claim 涉及业务知识真伪，读 `project-wiki/SKILL.md`
 3. 如果要判白/灰/黑或旧知识退出，读 `project-knowledge-curator/SKILL.md`
 4. 用户要“说人话/落卡”时，再读 `knowledge-card-qa/SKILL.md`
+
+### 阶段证据门 / 多步链路验证
+
+1. 读 `stage-evidence-gate/SKILL.md`
+2. 先重写 goal：用户看见/期待的现象、共通概念/claim、本轮要校准的关系、停止条件
+3. 先把用户表象语言翻译成共通概念，再决定需要哪些证据面；不能直接用实现侧词汇替代用户概念
+4. 先说明每一步在方法论里的角色：它承接什么、改变什么、交给谁、什么现象会反驳它
+5. 具体证据形式由当前 goal 或项目约定决定；router 不硬编码任何项目名、字段名、工具名或实现侧检查形式
+6. 新证据进入前，先写清它会支持/反驳哪个概念或猜想；如果两种解释都会出现同一现象，就不更新判断
+7. 原因不明或多猜想竞争复杂时追加 `problem-review-mapper`，用证据态势图刷新五态
+8. 例子只能作为 example lens：允许抽取可迁移实践（阶段契约、追溯关系、反例、代理证据 vs 目标证据），禁止把鱼骨、视频帧、贴纸、某个业务链路等具体形状写成通用行为准则
+9. 只有当前 goal 选定的证据面能互相解释，且用户可见目标 claim 被覆盖后，才允许说这条链路真的走对；缺失证据面必须标 gap，不能默认通过
 
 ### Obsidian 知识导读 / 写回
 
@@ -191,9 +220,10 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 | `decision-tripwire` | 决策前拦一道：查起跳点（物本位 vs 目的本位）、逼出"赢的标准"节点、抓假互斥/串行化 | 不替用户拍板，不立完标准就替他排序 |
 | `three-rulers` | 批量候选/想法收敛：原话留源→洞察升维→立尺→强度梯子/座位矩阵→裁决跟尺走→停车场 | 不替用户锁尺；尺锁定后的推导裁决由它填；单点取舍不归它管 |
 | `problem-review-mapper` | 图优先 review / 排查 / 复盘 / 多证据收敛 | 不维护业务知识真源 |
-| `canonical-claim-compiler` | 把 PRD/自然语言编译成 concept_id、claim_id、pending、drift、claim_ref | 不写代码，不替人裁决 identity，不直接写 vault |
+| `stage-evidence-gate` | 把多步链路拆成用户现象、共通概念、证据面、反例和不确定性更新 | 不替代业务实现，不把具体例子或 happy path 当正确性证明 |
+| `canonical-claim-compiler` | 把 PRD/自然语言编译成 concept_id、claim_id、pending、drift、claim_ref | 不直接实现，不替人裁决 identity，不直接写 vault |
 | `project-wiki` | Obsidian Query / Ingest / Lint / SourceCheck 工具层 | 不裁决黑白灰，不替用户拍板 |
-| `project-knowledge-curator` | 三色知识、authority、Knowledge Pack、Repair Loop | 不直接写代码，不替代 vault IO |
+| `project-knowledge-curator` | 三色知识、authority、Knowledge Pack、Repair Loop | 不直接实现，不替代 vault IO |
 | `project-roadmap-board` | Obsidian Canvas 路书、闭环工作块、Loop 状态事务 | 不托管业务事实 |
 | `knowledge-card-qa` | 把已校验结论压成人话卡/决策卡 | 不制造新事实，不替代权威源 |
 | `logical-grammar` | 判断对象/关系/状态/动作是否合法组合 | 不判断真假，不替代证据 |
@@ -202,7 +232,7 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 
 ## 反模式
 
-- 用户没说业务域时直接写代码方案。
+- 用户没说业务域时直接写实现方案。
 - 一开始把 `project-wiki`、`curator`、`roadmap`、OpenSpec 指南全读进来。
 - PRD 还没编译 concept / claim，就直接写 Obsidian、OpenSpec 或 roadmap。
 - 让 LLM 用同义词自由复述 accepted 术语，再指望 Obsidian 搜索自动理解。
@@ -214,10 +244,11 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 - 对象关系还没成句就开始查真假。
 - 把未知真值条件默认当真。
 - 把价值、审美、愿景包装成“已验证事实”。
-- 把代理证据当目标证据（fixture 过 / OpenSpec validate 过 / 文件存在 / stickerUri 有值 / embedding row 有了 → 当成真机通过、用户真看到有效贴纸）。
+- 把代理证据当目标证据（某个测试、文件、链接或中间产物存在 → 当成用户可见结果真实正确）。
 - 把粗猜想整包排除（"网络排除了""VLM 排除了""UI 没问题"——证据只打到一个子机制，却记成整包否掉）。
 - 把 pending 当 fact（OpenSpec validate / runbook / harness green / fixture pass 只是某一层 ready，不是真值闭合）。
-- 让同一个 worker 查现状 + 改代码 + 跑验证 + 写总结（证据面没有独立性，必然自证完成）。
+- 让同一个 worker 查现状 + 改实现 + 跑验证 + 写总结（证据面没有独立性，必然自证完成）。
+- 把一个有效例子升级成固定方法，而不是只沉淀其中的可迁移实践。
 
 ## 入口口诀
 
@@ -229,6 +260,9 @@ PRD 先编 identity；
 结论要写真值，证伪反着审一趟；
 价值审美只 show 不伪装事实；
 排查先画证据态势图，先刷猜想五态，说清证据覆盖到哪层；
+多步链路先重写 goal：用户现象 -> 共通概念/claim -> 本轮证据面；
+例子只抽可迁移实践，不把具体业务形状当通用规则；
+具体验证语言由当前项目决定，不写进 router 准则；
 讲顺序才用流程放射图；
 知识先查 wiki；
 能不能用交 curator；

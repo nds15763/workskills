@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stage Evidence Gate"
+  short_description: "Validate staged workflows with evidence"
+  default_prompt: "Build a stage evidence gate for this workflow."
