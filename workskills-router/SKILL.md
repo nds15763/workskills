@@ -21,6 +21,8 @@ description: >-
 - 先读下游 skill 的 `SKILL.md`；只有触发到细节，才读 `references/*` 或运行 `scripts/*`。
 - 不要一次性读取整个 `/Users/kim/code/workskills`。
 - 对于多步链路、可见结果或用户表象需要校准的任务，先走 `stage-evidence-gate` 做跨语言证据门：记录用户现象，编译共通概念/claim，选择本轮证据面和停止条件。router 不硬编码实现侧语言；具体实现词只能在当前项目证据计划或示例里出现。
+- 对于开放、不确定、低先例或跨域问题，不能把代码库当成封闭世界。先把外部成熟解法、官方能力边界、论文/开源实现、相邻产品做法编译成先验和候选机制；每条外部参考必须落到 `adopt / reject / pending`，并说明它改变哪个猜想、证据面或下一验。
+- 对于任何症状或失败，先把"相关性"和"因果性"分开。大模型可以从许多相关代码里猜一个看似合理的改法，但代码修改必须建立在因果链上：先说明现象的直接机制、可观测预测和能区分猜想的证据面，再决定实现。手机过热时，火焰图只是证明"为什么 CPU/GPU 忙"的一种证据，不是所有性能问题的固定模板。
 - 三类逻辑审计先做分流，不在 router 里实现规则：
   - `logical-grammar`：对象 / 关系 / 状态 / 动作能不能合法组合。
   - `truth-condition-checker`：claim / node / gate / decision 什么条件下为真或为假。
@@ -49,9 +51,10 @@ description: >-
 | 用户在问什么 | 主 skill | 追加条件 |
 |---|---|---|
 | 问题模糊、方案太多、不踏实、好不好用/好不好看 | `problem-statement-card` | 需要证据校准时加 `problem-review-mapper` |
+| 开放/低先例/跨域问题、想看别人怎么做、需要外部参考或类似方案 | `problem-review-mapper`（先验 + 外部类比 + 证据态势图） | 需要沉淀到 Loop / OpenSpec 时按项目指南写 `adopt / reject / pending`；涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
 | 在多个方案里挑/排序、"哪个更好/选哪个/先做哪个/我喜欢哪个"、凭"什么好做"挑东西 | `decision-tripwire` | 标准立完要排序时加 `problem-statement-card`；要落卡时加 `knowledge-card-qa` |
 | 甩来对话记录/一堆想法说"思路乱了/想法太多/帮我收敛"、反馈/候选（≥3）要收敛成一版范围、砍方案、（多人或一人不同时刻）各执一词 | `three-rulers` | 锁尺时加 `knowledge-card-qa`；单点取舍转 `decision-tripwire` |
-| review、排查、复盘、归因、真因、为什么坏/为什么挂、线上 bug、排错、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper`（按贝叶斯排查表走） | 涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
+| review、排查、复盘、归因、真因、为什么坏/为什么挂、线上 bug、排错、发热/卡顿/延迟、我感觉不对劲、画图、哪些对/不对 | `problem-review-mapper`（按贝叶斯排查表走） | 先区分相关代码与因果机制；为当前现象选择能区分猜想的证据面（过热可用火焰图/trace）；涉及业务知识真伪时加 `project-wiki` + `project-knowledge-curator` |
 | 多步链路、可见结果或 E2E “过了但不知道证明了什么”，需要把用户表象语言翻译成共通概念和本轮证据面 | `stage-evidence-gate` | 根因不明或多猜想竞争时加 `problem-review-mapper`；术语/claim 漂移时先加 `canonical-claim-compiler`；要落 OpenSpec 时再按项目指南 |
 | PRD、新需求、设计稿、LLM 总结、术语漂移、Obsidian/OpenSpec 同步、已有知识检索不到 | `canonical-claim-compiler` | 需要实际读写 vault 时加 `project-wiki`；需要 accept/merge/reject 时加 `project-knowledge-curator` |
 | Obsidian、知识库、业务域、`#业务`、`[[功能点]]`、补文档、Knowledge Pack | `project-wiki` | 需要判能不能用时加 `project-knowledge-curator` |
@@ -68,13 +71,60 @@ description: >-
 排查 = 在一堆猜想里用最少验证次数找真因。路由到 `problem-review-mapper` 后按**贝叶斯排查表**走，router 只立口径、不实现表：
 
 - 原因不明 / 多猜想竞争 / 调研推进时，默认要求 `problem-review-mapper` 先画**证据态势图**：同图展示猜想、先验、诊断性证据、混杂、挂起调研和下一验。
+- 先验不是只来自代码直觉。开放问题的先验必须显式吸收外部已知解法：官方能力边界、成熟相邻模式、跨域研究/开源实现、竞品/产品范式；外部参考只能改变猜想和实验设计，不能直接把本项目 gate 判绿。
 - 材料很多但主要问题是顺序和阶段时，用**流程放射图**；单条 claim / gate / decision 是否成立时，转 `truth-condition-checker` 写真值条件和反向证伪。
 - 每个猜想只能处于 `排除 / 走弱 / 挂起 / 领先 / 确认` 五态之一；决断 = 刷状态，不是"选一个答案"。
 - 每次刷新状态必须写清「**这条证据只覆盖到哪一层**」——证据打到哪层只能排到哪层，禁止整包排除。
 - `领先 ≠ 确认`：单样本 / 跨次方差大的领先不能拿去当根因改实现。
 - 两个猜想下都会出现的证据，似然比 ≈ 1，不许更新判断（"查了半天等于没查"）。
+- 症状类问题先找因果，不先写修复。相关性只能生成候选猜想，不能授权改代码。比如"手机过热"的第一层 claim 是 CPU/GPU/IO/日志/网络/渲染哪条路径繁忙；"加队列/降频/缓存"只是候选干预，必须等火焰图、trace、日志时间窗或其他可区分实验支持后才能成为实现动作。
 
 图型、表、卡模板和猜想五态定义在 `problem-review-mapper`。
+
+## Loop 方法论
+
+Router 层的 Loop 只是一套**思考方法和协作风格**，不是某个项目的文件模板。它回答的是：用户怎么开始 loop，agent 每轮怎么内采/外采，怎么做决策，决策后怎么继续思考。具体项目里的 `STATE.md`、OpenSpec、E2E、知识卡、设备日志、业务 gate，交给项目 skill 或项目指南内化。
+
+当用户说 loop、循环、长任务、路书、反复 E2E、"每轮怎么决策"、"怎么让 agent 自己持续推进"时，router 先判断这是哪种 loop：
+
+- `开放策略 loop`：问题没现成局部答案，需要外部先验、能力边界、候选机制和 evidence gate。
+- `症状排查 loop`：用户或运行结果报告发热、卡顿、延迟、坏图、失败日志等症状，需要先找因果机制。
+- `批量探索 loop`：多个独立假设可以并行准备；必须先声明写入边界、共享资源、集成点和 verifier。
+- `已知契约 loop`：目标和 gate 已定，只需要按状态文件重跑、验证、回写。
+
+启动 loop 时，不要先派代码任务。先产出或补齐一个方法论入口：
+
+| 项 | 需要写清 |
+|---|---|
+| Goal | 用户看见的目标现象，用用户语言写。 |
+| Non-goals | 本 loop 不证明、不修改、不承诺的范围。 |
+| State | 当前可信状态在哪里；具体载体由项目决定，不由 router 规定。 |
+| Gates | 哪些 claim 可独立判定，什么条件绿/黄/红。 |
+| Badcases | 哪些反例会推翻当前方向。 |
+| Evidence | 哪些是 target、proxy、invalid、stale。 |
+| Roles | implementer / verifier / human gate 谁能做什么，谁不能自证完成。 |
+| Topology | 单线、批量探索、共享稀缺 oracle、还是人工 gate。 |
+
+单轮 loop 按这个顺序走：
+
+1. **锁一个问题**：本轮只处理一个 gate、badcase、claim 或假设，不把多个失败混成"继续优化"。
+2. **信息内采**：从当前工作现场取证，包括用户原话、项目文档、代码、日志、测试、历史结论、知识卡、状态文件；标注证据新旧、target/proxy 边界和已失效上下文。
+3. **信息外采**：把工作现场之外的材料纳入先验，包括用户在提示词里喂给 agent 的外部内容、官方能力边界、成熟相邻方案、论文、开源实现、竞品或产品范式。外采不等于上网搜索；用户提供的链接、摘录、截图、repo 名称、论文标题也算外部参考。每条外部参考必须落成 `adopt / reject / pending`，并说明它改变哪个先验、候选机制或下一验。
+4. **贝叶斯/MoE 决策**：列候选机制、先验、可观测预测、反预测和最有信息增益的证据面；MoE 选择的是下一位专家/工具/worker/验证面，不是直接选一个看起来顺手的补丁。
+5. **选择拓扑**：如果多个假设独立，允许批量探索；如果共享真机、生产环境、人工 reviewer、昂贵模型或其它稀缺 oracle，则只能并行准备，oracle 使用必须排队且 WIP 受限。
+6. **决定下一动作**：只能是 `report-only update`、`evidence run`、`scoped implementation`、`independent verification`、`human handoff`、`pause/kill` 之一，并写明为什么其他动作暂时不合法。
+7. **执行并记录**：每次运行或修改都要有 run_id/session_id/label；执行后分类 artifacts，追加 run log，更新 state。
+8. **复盘再思考**：写清本轮淘汰了什么旧猜想、哪个先验变强/变弱、哪个知识卡/文档需要回写、下一轮唯一问题是什么。
+
+可借鉴 `cobusgreyling/loop-engineering` 的运行骨架：L1 report-only 起步、持久状态、run log、readiness/audit、预算/kill switch、maker/checker 分离、必要时隔离工作区。router 只吸收这些作为 loop 方法，不把它们写死成项目模板。具体项目的权威事实、证据 gate、用户可见 claim 和因果链，必须由项目 skill 或项目文档承接。
+
+拓扑选择的通用规则：
+
+- 单线 loop：一个 gate、一个假设、一个证据面；适合回归和已知契约。
+- 批量探索 loop：多个 worktree/worker 只能处理独立假设或独立证据面；必须有 owner、写入边界、kill 条件和集成点。
+- 共享 oracle loop：当目标证据依赖真机、生产账号、人工评审、昂贵实验、远端环境等稀缺资源时，worktree 只并行做 preflight；oracle 访问必须排队，默认 WIP=1，除非项目 skill 明确记录更多资源。
+- verifier lane 可以并行读证据，但不能改它正在验证的实现。
+- 并行探索的产物只改变先验和候选机制；目标 gate 仍然只能由项目定义的 target evidence 关闭。
 
 ## 路由流程
 
@@ -179,6 +229,11 @@ Obsidian 知识身份顺序固定：
 
 每轮 Loop 必须先回写 `.canvas` 再继续派工；新增任务链先落 runtime group，开始处理再建子环，颜色、edge、group label/color 同批同步。
 
+Loop 的决策门还必须区分两类输入：
+
+- `外部先验门`：开放策略、低先例、跨域实现或 MoE 决策进入实现前，先记录 2-4 条外部参考及 `adopt / reject / pending`，把它们转成候选机制、证据面或下一验。
+- `因果取证门`：用户报告任何失败症状时，下一动作先是把相关性候选转成因果假设，选择能区分这些假设的证据面；不能把"可能相关的代码位置"直接升级成修复方案。过热场景下，火焰图/trace 是常见证据面，因为它能回答 CPU/GPU 为什么忙。
+
 ### OpenSpec / 后端技术方案
 
 1. 如果 OpenSpec 来自 PRD、设计稿或业务 claim，同步前先读 `canonical-claim-compiler/SKILL.md`
@@ -247,6 +302,9 @@ OpenSpec / 技术设计是 change 的技术证据，不是业务知识库。
 - 把代理证据当目标证据（某个测试、文件、链接或中间产物存在 → 当成用户可见结果真实正确）。
 - 把粗猜想整包排除（"网络排除了""VLM 排除了""UI 没问题"——证据只打到一个子机制，却记成整包否掉）。
 - 把 pending 当 fact（OpenSpec validate / runbook / harness green / fixture pass 只是某一层 ready，不是真值闭合）。
+- 把代码库当封闭世界，在开放问题里不看外部成熟解法、官方能力边界或跨域参考，直接在本地参数里打转。
+- 把相关性当因果性：用户给出症状后，agent 因为某段代码"看起来相关"就直接加队列、节流、缓存或重构，没有先证明这段机制确实导致现象。
+- 把多个 worktree 或多个 agent 当成多个目标 oracle；共享真机、生产环境、人工 reviewer、昂贵实验时，没有队列和 WIP 限制就并行取证。
 - 让同一个 worker 查现状 + 改实现 + 跑验证 + 写总结（证据面没有独立性，必然自证完成）。
 - 把一个有效例子升级成固定方法，而不是只沉淀其中的可迁移实践。
 
