@@ -279,6 +279,249 @@ closure_truth_hash: sha256(canonical_serialize({
 - 序列化必须 deterministic，优先用 RFC 8785 JCS 或等价 canonical JSON。
 - claim dependency 必须是 DAG；出现环时先拆 claim，不要用工程兜底绕过。
 
+## Concept Evolution Layer
+
+前面 schema 是静态身份快照。这一层把 concept/claim 变成**有时间厚度的演进实体**——记版本、记双向费曼融合、记硬核/保护带、记 drift 累积、记决策反向索引、记推论角色。
+
+### 为什么需要这一层
+
+静态 concept 卡解决"是不是同一个对象"。演进层解决"两周后为什么还在原点"——同一概念反复被讨论但没收敛。根因是概念没有被当成**随时间演进的实体**，每次对话都从零对齐。
+
+### 哲学资源对应
+
+| 字段/层 | 哲学资源 | 解决什么 |
+|---|---|---|
+| 时间厚度（retention/primal/protention） | Husserl 内时间意识 + Heidegger 此在时间性 | 知道概念"经过迭代" |
+| fusion_record | Gadamer 视域融合 | 双向费曼记录——双方都可能变，不是单向对齐 |
+| hard_core / protective_belt | Lakatos 研究纲领 | fork 判据——硬核变才是 fork |
+| drift_state + crisis 阈值 | Kuhn 反常/危机/范式革命 | 什么时候真要 fork，避免每次 drift 都打断 |
+| sense.inferential_role | Brandom 推论主义（主轴）| 飘移判定——推论角色公开可观察，不循环论证 |
+| landing | 操作主义 | 客观落地层，机器 grep 即可 |
+| affects_decisions | Quine 整体论 | 决策反向回溯——单个概念不能单独判，放信念网里 |
+| stability_score | 综合 | 演进曲线 y 轴，随时间收敛的双曲线 |
+
+### 时间厚度（Husserl + Heidegger）
+
+每个 concept/claim 必须版本化：
+
+```
+concepts/<claim_id>/
+  v1.md
+  v2.md
+  ...
+  lineage.md  # 谱系图：v1→v2→v3→(v3a, v3b)
+```
+
+每次对话提到 concept，主 agent 必须做三件事，不直接说"我懂"：
+
+| 时间层 | 含义 | 字段 |
+|---|---|---|
+| retention | 继承自哪 | `parent_version` / `based_on_transcript` |
+| primal | 当前用法属于哪版 | `matches_version` / `drift_signal` |
+| protention | 预期下次怎么用 | `expected_usage` / `open_questions` |
+
+### 视域融合（Gadamer）
+
+版本 bump 不记"谁纠正谁"，记**融合产物**——双向费曼的本质是视域融合，产出双方之前都没有的新视域：
+
+```yaml
+fusion_record:
+  user_horizon: "用户脑中的逻辑图像（原话片段）"
+  ai_horizon: "AI 脑中的逻辑图像（原话片段）"
+  fused_horizon: "融合后的新视域（新版本定义）"
+  fusion_type: mutual | user_refines_ai | ai_refines_user | external
+```
+
+`mutual` 最常见；承认双方都可能变。只有 `user_refines_ai` 或 `ai_refines_user` 时才是单向纠正。
+
+### 硬核 vs 保护带（Lakatos）
+
+每个 concept 版本必须声明两部分：
+
+```yaml
+hard_core:  # 不可变，变了就是 fork
+  - "属于 viewpoint 维度"
+  - "基于 headPose.pitch"
+
+protective_belt:  # 可调，变了是版本演进
+  - "pitch 阈值 30°（可调）"
+  - "命名 head_up（可调）"
+```
+
+判 fork 判据：`hard_core` 变了 = fork（split / merge / supersede / reject）；`protective_belt` 变了 = 版本演进。不靠感觉。
+
+### Drift 累积与危机阈值（Kuhn）
+
+drift 不是错误，是反常信号。累积到危机才需要范式检讨：
+
+```yaml
+drift_state:
+  anomaly_count: 0
+  crisis_threshold: 3
+  state: normal | anomaly | crisis | revolution
+  anomalies:
+    - {ts, session_id, drift_type, signal, transcript_ref}
+  last_action: null  # crisis 时填 paradigm_review / fork / redefine / reject
+```
+
+| state | anomaly_count | 动作 |
+|---|---|---|
+| normal | 0 | 无 |
+| anomaly | 1 ~ crisis_threshold-1 | 记下来，不处理 |
+| crisis | >= crisis_threshold | 触发 problem-review-mapper 范式检讨 |
+| revolution | crisis 后 | 决定 fork / redefine / reject |
+
+裁决后 `anomaly_count` 清零，state 回 normal。这避免每次 drift 都打断对话——反常是正常的，累积到危机才处理。
+
+### 推论角色（Brandom 主轴）
+
+判飘移最硬的层，因为推论角色是**公开可观察的**（决策是公开的），不依赖 AI 主观语义判断（循环论证风险）。
+
+每个 concept/claim 版本的 sense 必须声明推论角色：
+
+```yaml
+sense:
+  sign: "head_up"  # 指称（Frege signifier）
+  referent: "headPose.pitch > 30°"  # 事物（Frege reference）
+  inferential_role:  # 逻辑（Frege sense / Brandom 推论角色）
+    upstream_inferences:
+      - "headPose.pitch 测量值 > 30° → head_up 成立"
+    downstream_inferences:
+      - "head_up 成立 → 样本进 viewpoint bucket"
+      - "head_up 成立 → 不计入 action bucket"
+```
+
+判飘移 = 重跑推论链。不需要 AI 凭语义判断"用法是否一致"，只需把旧决策拿出来按新版本 `upstream_inferences` / `downstream_inferences` 重跑一遍，看结论变不变。
+
+### 客观落地（机器可验证）
+
+```yaml
+landing:
+  code_landed: false
+  code_refs: []
+  doc_landed: true
+  doc_refs: ["docs/viewpoint.md#head-up"]
+  spec_refs: []
+```
+
+主 agent 跑 grep 即可判定，不需要 AI 判断。`code_landed=false` 就是没收敛的客观证据。
+
+### 决策反向索引（Quine 整体论）
+
+每个 concept 版本必须带 `affects_decisions`，反向索引到引用它的决策（gate green / commit / spec）：
+
+```yaml
+affects_decisions:
+  - decision_id: G3_unknown_cat_recording
+    verdict_at_decision: green
+    sense_used: v3a
+    needs_recheck: false  # concept 版本变化时由 workskills-router Step C 重跑推论链更新
+```
+
+概念版本变化时，扫描所有引用旧版本的决策，按新 sense 重跑推论链：
+- 旧决策在新版本下还成立 → `ok`
+- 不成立 → `needs_recheck`
+- 判不了 → `ambiguous`（必须人工复检）
+
+**不自动降级 green → yellow，只标 needs_recheck**。因为概念变不等于旧决策错——可能旧决策其实用的是新 sense，只是当时没区分清楚。必须重跑逻辑链才能确定。
+
+### Stability Score
+
+```text
+stability_score = f(landing, drift_state, decisions_valid) ∈ [0, 1]
+
+- code_landed + doc_landed + spec_refs 都齐 → +0.4
+- drift_state.state == normal 且 anomaly_count == 0 → +0.3
+- 所有 affects_decisions.needs_recheck == false → +0.3
+```
+
+精准 = 1.0；过程态在 [0, 1)。这是演进曲线的 y 轴，随时间收敛的双曲线。
+
+### 演进版完整 schema
+
+在原 concept 卡基础上扩展（向后兼容）：
+
+```yaml
+concept_id: mewt.viewpoint.head_up
+version: v3a
+parent: v3
+fork_type: split  # split | merge | supersede | reject
+
+# 时间厚度
+created_at: 2026-07-09
+based_on_transcript: session_X
+retention_from: v3
+
+# 指称/事物/逻辑三元 + 推论角色
+sense:
+  sign: "head_up"
+  referent: "headPose.pitch > 30°"
+  inferential_role:
+    upstream_inferences: ["headPose.pitch > 30° → head_up"]
+    downstream_inferences: ["head_up → 样本进 viewpoint bucket"]
+
+# 硬核 vs 保护带
+hard_core:
+  - "属于 viewpoint 维度"
+  - "基于 headPose.pitch"
+protective_belt:
+  - "pitch 阈值 30°（可调）"
+  - "命名 head_up（可调）"
+
+# 视域融合
+fusion_record:
+  user_horizon: "用户原话片段"
+  ai_horizon: "AI 原话片段"
+  fused_horizon: "融合后定义"
+  fusion_type: mutual
+
+# 漂移状态
+drift_state:
+  anomaly_count: 0
+  crisis_threshold: 3
+  state: normal
+  anomalies: []
+  last_action: null
+
+# 客观落地
+landing:
+  code_landed: false
+  code_refs: []
+  doc_landed: true
+  doc_refs: ["docs/viewpoint.md#head-up"]
+  spec_refs: []
+
+# 决策反向索引
+affects_decisions:
+  - decision_id: G3_unknown_cat_recording
+    verdict_at_decision: green
+    sense_used: v3a
+    needs_recheck: false
+
+# 综合分数
+stability_score: 0.45
+```
+
+### 哲学外因的诚实局限
+
+| 哲学资源 | 软在哪 |
+|---|---|
+| Gadamer 视域融合 | 依赖对话双方诚实记录，无法强校验 fusion_record 内容真实性 |
+| Kuhn crisis 阈值 | 默认 3 是经验值，需调；不同概念可能阈值不同 |
+| Brandom 推论角色 | 重跑推论链有成本；复杂决策链可能跑不动 |
+| Quine 整体论 | 决策网络越大，回溯扫描越贵 |
+
+**硬在哪**：landing（机器 grep）、inferential_role（公开决策）、hard_core（明确 fork 判据）这三层不依赖主观判断。
+
+### 反模式（演进层专属）
+
+- 用 LLM 凭语义判"用法是否一致"——循环论证，AI 是当事人
+- 每次 drift 都立刻 fork 或 redefine——Kuhn 反常是正常的，累积到危机才处理
+- 概念版本变了自动降级所有引用旧版本的决策 green → yellow——必须重跑推论链，可能旧决策其实用的是新 sense
+- fusion_record 只记 `user_refines_ai`——双向费曼是视域融合，承认双方都可能变
+- 把 discriminator 写成纯文本而不带 `upstream_inferences` / `downstream_inferences`——推论角色是判飘主轴，必须结构化
+- stability_score = 1.0 但 code_landed = false——客观落地是硬指标，没落地不能满分
+
 ## Scripts / CLI
 
 随本 skill 提供 `scripts/claim-hash.py`，是 hash 算法的参考实现，也是 drift 检测器的底座。

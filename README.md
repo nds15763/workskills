@@ -1,16 +1,25 @@
 # Workskills
 
-本仓库是一组本地协作 skills。真正给 Codex 使用的统一入口是：
+本仓库是一组本地协作 skills。真正给 agent 使用的统一入口是：
 
 - `workskills-router`
-- 安装位置：`/Users/kim/.codex/skills/workskills-router`
+- 安装位置：`/Users/kim/.trae-cn/skills/workskills-router`（软链到本仓库）
 - 源目录：`/Users/kim/code/workskills/workskills-router`
 
-根 README 只给人快速浏览；不要把它当成 skill 入口。Codex 需要路由时应加载 `workskills-router/SKILL.md`，再由它按需加载下游 skill。
+根 README 只给人快速浏览；不要把它当成 skill 入口。agent 需要路由时应加载 `workskills-router/SKILL.md`，再由它按需加载下游 skill。
 
 ## 方法链
 
 整体实践不是一个 E2E skill：`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决，`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
+
+## 概念收敛
+
+防止"两周后还在原点"——同一概念反复被讨论但不收敛。由两个 skill 协同：
+
+- `workskills-router` 的 **Concept Convergence Process**（3 Step：Lookup → Track → Reindex）负责何时触发、何时升级 badcase、何时回溯决策
+- `canonical-claim-compiler` 的 **Concept Evolution Layer** 负责演进版 schema：版本化 + 时间厚度（Husserl）+ 视域融合（Gadamer）+ 硬核/保护带（Lakatos）+ drift 累积（Kuhn）+ 推论角色（Brandom 主轴）+ 客观落地 + 决策反向索引（Quine）+ stability_score
+
+演进曲线作为人的主观视角：漂的就是风险点，收敛的就是稳定点，不用读卡内容。
 
 ## 路由速查
 
