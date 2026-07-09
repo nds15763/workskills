@@ -136,6 +136,26 @@ Router 层的 Loop 只是一套**思考方法和协作风格**，不是某个项
 
 `canonical-claim-compiler` 已扩展了 Concept Evolution Layer：版本化 + 时间厚度（Husserl）+ 视域融合（Gadamer）+ 硬核/保护带（Lakatos）+ drift 累积（Kuhn）+ 推论角色（Brandom 主轴）+ 客观落地 + 决策反向索引（Quine）+ stability_score。router 层只负责何时触发、何时升级 badcase、何时回溯决策。
 
+### 知识与概念的关系
+
+concept 版本文件不是独立于知识库的第二套体系，而是写进项目知识库（如 Mewt 的 `docs/` Obsidian vault），和业务知识文档放在一起：
+
+| 层 | 回答什么 | 例子 |
+|---|---|---|
+| 知识（业务文档） | 这个业务是什么、规则、流程 | `docs/猫咪/本地猫/13-视角收集整体逻辑与评分体系.md` |
+| 概念（concept 版本文件） | 这个词在我们对话里怎么漂的、落地没、影响哪些决策、稳不稳定 | `docs/概念/mewt.viewpoint.head_up.md` |
+
+概念是知识的"演进版本元数据"——知识描述业务事实，概念描述一个 `concept_id` 随时间演进的时间厚度、drift、落地状态、stability_score。两者通过 Obsidian 双链互相关联，不维护两套目录。
+
+**落地方式**：
+- concept 文件写进项目知识库 vault（如 `docs/概念/<concept_id>.md`），不单独建 `concepts/` 目录
+- 用 Obsidian frontmatter（`业务域` 标签 + `knowledge_kind: concept` + `authority_level`），和业务文档同款格式
+- Concept Evolution Layer 的机器可 grep 字段（`code_landed` / `doc_landed` / `drift_state` / `anomaly_count` / `stability_score` / `affects_decisions`）放 frontmatter——Layer 1 客观落地测试能直接 grep
+- 用双链 `[[业务文档名]]` 关联业务知识；Obsidian 反向链接面板自动让业务文档看到引用它的 concept，不用手动改业务文档
+- 版本演进在单文件内用 `## vN — 日期` 标题，最新在上；双链 `[[concept_id]]` 永远指最新版
+
+**查找约定**：`canonical-claim-compiler` 和 Step A 扫项目知识库 vault 里的 concept 文件，按 `concept_id` frontmatter 字段匹配，不依赖固定目录路径。
+
 ### 与 Loop 方法论和 Loop Skill Convergence 的关系
 
 | Loop 方法论 | Loop Skill Convergence | Concept Convergence |
@@ -150,14 +170,14 @@ Router 层的 Loop 只是一套**思考方法和协作风格**，不是某个项
 
 每次主 agent 路由到 `canonical-claim-compiler` 时强制跑：
 
-1. **查 retention**：这个 `claim_id` 最近版本是什么（查 `concepts/<claim_id>/` 找最新 vN.md）
+1. **查 retention**：这个 `claim_id` 最近版本是什么（查项目知识库 vault 里该 `concept_id` 的 concept 文件，按 `concept_id` frontmatter 匹配，看最新版本段落）
 2. **判 primal**：当前对话用法属于哪版
    - 全满足当前版本 → `matches_version: true, drift_signal: none`
    - 部分满足（提到新 sense） → `partial`，记 anomaly
    - 都不满足 → `false`，强制创建新版本或 fork
 3. **写 protention**：预期下次用法 + `open_questions`
 
-如果 `claim_id` 不存在 → 首次提及，创建 v1（含 canonical-claim-compiler Concept Evolution Layer 全部字段）
+如果 `claim_id` 不存在 → 首次提及，在项目知识库 vault（如 `docs/概念/<concept_id>.md`）创建 v1（含 Concept Evolution Layer 全部字段 + Obsidian frontmatter）
 
 **关键原则**：主 agent 不能直接说"我懂 head_up"。必须先查演进版本，判 primal 属于哪版。这把"对齐"从瞬时变成有时间厚度的过程。
 
@@ -257,6 +277,7 @@ mewt.action.bucket        ██████████ 1.00  (converged)
 - 把判飘交给 LLM 凭语义判断"用法是否一致"——循环论证，AI 是当事人
 - 概念版本变了自动降级所有引用旧版本的决策——必须重跑推论链
 - 演进曲线当装饰品——`drift_count >= 2` 且 `code_landed = false` 必须升级 badcase
+- 把 concept 文件单独放 `concepts/` 目录不进知识库 vault——和知识两处维护，双链能力失效，drift 时找不到
 
 ## 路由流程
 

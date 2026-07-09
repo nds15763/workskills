@@ -302,15 +302,39 @@ closure_truth_hash: sha256(canonical_serialize({
 
 ### 时间厚度（Husserl + Heidegger）
 
-每个 concept/claim 必须版本化：
+每个 concept/claim 必须版本化。concept 版本文件写进项目知识库 vault（如 Mewt 的 `docs/概念/<concept_id>.md`），和业务知识文档放在一起，不单独建 `concepts/` 目录：
 
 ```
-concepts/<claim_id>/
-  v1.md
-  v2.md
-  ...
-  lineage.md  # 谱系图：v1→v2→v3→(v3a, v3b)
+docs/概念/<concept_id>.md   # 单文件，版本演进在文件内用 ## vN — 日期 标题，最新在上
 ```
+
+文件结构（Obsidian frontmatter + 正文段落）：
+
+```markdown
+---
+concept_id: mewt.viewpoint.head_up
+version: v1
+parent: null
+业务域: "#猫咪 #本地猫 #视角收集 #概念"
+knowledge_kind: concept
+authority_level: B.supporting
+code_landed: false
+doc_landed: true
+drift_state: normal
+anomaly_count: 0
+stability_score: 0.40
+affects_decisions: "..."
+---
+
+# <concept_id>
+
+## v1 — 2026-07-09（当前）
+- canonical / not_same_as / hard_core / protective_belt
+- sense.inferential_role / fusion_record
+- 谱系（parent → 当前）用 frontmatter `parent` 字段，fork 时写 `v3a` / `v3b` 两行
+```
+
+**查找约定**：扫项目知识库 vault 里的 concept 文件，按 frontmatter `concept_id` 字段匹配，不依赖固定目录路径。双链 `[[业务文档名]]` 关联业务知识；Obsidian 反向链接面板自动让业务文档看到引用它的 concept。
 
 每次对话提到 concept，主 agent 必须做三件事，不直接说"我懂"：
 
