@@ -126,6 +126,138 @@ Router 层的 Loop 只是一套**思考方法和协作风格**，不是某个项
 - verifier lane 可以并行读证据，但不能改它正在验证的实现。
 - 并行探索的产物只改变先验和候选机制；目标 gate 仍然只能由项目定义的 target evidence 关闭。
 
+## Concept Convergence Process
+
+### 核心契约
+
+**每次对话提到 concept/claim 时，主 agent 必须先查演进版本，判 primal 用法属于哪版，写 protention 预期。** drift 1-2 次记反常不处理；drift >= 3 触发危机。concept 版本变化时必须重跑推论链回溯所有引用旧版本的决策。
+
+这不是可选优化——是防止"两周后还在原点"的硬约束。同一概念反复被讨论但没收敛，根因是概念没有被当成**随时间演进的实体**，每次对话都从零对齐。
+
+`canonical-claim-compiler` 已扩展了 Concept Evolution Layer：版本化 + 时间厚度（Husserl）+ 视域融合（Gadamer）+ 硬核/保护带（Lakatos）+ drift 累积（Kuhn）+ 推论角色（Brandom 主轴）+ 客观落地 + 决策反向索引（Quine）+ stability_score。router 层只负责何时触发、何时升级 badcase、何时回溯决策。
+
+### 与 Loop 方法论和 Loop Skill Convergence 的关系
+
+| Loop 方法论 | Loop Skill Convergence | Concept Convergence |
+|---|---|---|
+| 思考方法 + 协作风格（开放策略/症状排查/批量探索/已知契约） | 处理 harness/工程坑（Detect→Abstract→Propagate→Verify） | 处理概念漂移（Lookup→Track→Reindex） |
+| 整体 loop 编排 | 防止工程坑复发 | 防止概念回到原点 |
+| 用户说 loop / 循环 / 长任务时触发 | 每轮 loop 触发 | 每次对话提到 concept 触发 |
+
+三者互补，不替代。Loop 方法论管"怎么开始和持续推进 loop"，Loop Skill Convergence 管"工程坑怎么收敛进 skill"，Concept Convergence 管"概念怎么随时间收敛不漂回原点"。
+
+### Step A — Concept Lookup with Temporal Thickness
+
+每次主 agent 路由到 `canonical-claim-compiler` 时强制跑：
+
+1. **查 retention**：这个 `claim_id` 最近版本是什么（查 `concepts/<claim_id>/` 找最新 vN.md）
+2. **判 primal**：当前对话用法属于哪版
+   - 全满足当前版本 → `matches_version: true, drift_signal: none`
+   - 部分满足（提到新 sense） → `partial`，记 anomaly
+   - 都不满足 → `false`，强制创建新版本或 fork
+3. **写 protention**：预期下次用法 + `open_questions`
+
+如果 `claim_id` 不存在 → 首次提及，创建 v1（含 canonical-claim-compiler Concept Evolution Layer 全部字段）
+
+**关键原则**：主 agent 不能直接说"我懂 head_up"。必须先查演进版本，判 primal 属于哪版。这把"对齐"从瞬时变成有时间厚度的过程。
+
+### Step B — Drift Accumulation Tracking
+
+drift 累积追踪，不立即处理：
+
+| drift_state.state | anomaly_count | 动作 |
+|---|---|---|
+| normal | 0 | 无 |
+| anomaly | 1 ~ crisis_threshold-1 | 记下来，不处理（反常是正常的）|
+| crisis | >= crisis_threshold（默认 3）| 触发 `problem-review-mapper` 范式检讨 |
+| revolution | crisis 后 | 决定 fork / redefine / reject |
+
+crisis 时必须裁决，不能继续累积。裁决后 `anomaly_count` 清零，state 回 normal。
+
+**升级为 badcase 的判据**：`drift_count >= 2` 且 `landing.code_landed = false` → 升级为 badcase，走 `problem-review-mapper` 强制裁决（adopt/reject/merge/split），不再无限讨论。
+
+### Step C — Decision Reindex on Version Change
+
+concept 版本变化时触发：
+
+1. 扫描该 `claim_id` 的 `affects_decisions` 中所有决策
+2. 对每个决策按新版本的 `sense.inferential_role` 重跑推论链（Brandom 主轴）
+3. 标记：
+   - `ok`：旧决策在新版本下还成立
+   - `needs_recheck`：旧决策在新版本下不成立
+   - `ambiguous`：判不了，必须人工复检
+4. **不自动降级 green → yellow，只标记 needs_recheck**。因为概念变不等于旧决策错——可能旧决策其实用的是新 sense，只是当时没区分清楚
+5. 产出"影响清单"给用户
+
+### 演进曲线（人的主观视角）
+
+不做"用户主动看卡"。给一个简单视图，事件驱动 alert + 演进曲线：
+
+```
+mewt.viewpoint.head_up    ████████░░ 0.80  (drift 2, code_landed ✓, decisions ok)
+mewt.viewpoint.head_down  ███░░░░░░░ 0.30  (drift 5, code_landed ✗, decisions needs_recheck) ← 风险点
+mewt.action.bucket        ██████████ 1.00  (converged)
+```
+
+漂的就是风险点，收敛的就是稳定点。扫一眼就知道哪个概念还没闭环，不用读卡内容。
+
+`stability_score` 就是用户要的"随时间收敛的双曲线"的 y 轴。
+
+### Drift Alert（事件驱动）
+
+每次 anomaly 出现时主动 alert（不是用户主动查）：
+
+```
+[Drift Alert] mewt.viewpoint.head_up
+- 最新版本（v3a）: head_pitch_up，viewpoint 维度
+- 刚才讨论时用作: action bucket，"抬头看东西"
+- 这是 v3b 的 sense，不是 v3a
+- 影响的过去决策:
+  - G3 gate green（2026-07-08）基于 v3a，sense_used=v3a
+  - commit abc123 基于旧 v2
+- 建议: 显式选 v3a 还是 v3b，或正式 fork；选 v3b 的话 G3 需要 needs_recheck
+```
+
+这就像 git blame——你不主动查，冲突时自然冒出来。alert 是对话的一部分，看到就处理，不用专门翻卡。
+
+### 哲学外因
+
+| Step | 哲学资源 | 解决什么 |
+|---|---|---|
+| Step A 时间厚度 | Husserl 内时间意识 + Heidegger 此在时间性 | 知道概念"经过迭代" |
+| Step B drift 累积 | Kuhn 反常/危机/范式革命 | 什么时候真要处理 |
+| Step C 决策回溯 | Quine 整体论 + Brandom 推论主义 | 概念变 → 决策变 |
+
+诚实局限：
+- Gadamer 视域融合依赖对话双方诚实，无法强校验
+- Kuhn crisis 阈值（默认 3）是经验值，需调
+- Brandom 推论角色重跑有成本，复杂决策链可能跑不动
+
+硬在哪：landing（机器 grep）、inferential_role（公开决策）、hard_core（明确 fork 判据）三层不依赖主观判断。
+
+### 落地顺序
+
+1. **先做 Step A 的 retention/primal/protention 记录**——所有其他判据的基础。没有时间厚度，后面都是空的
+2. **再做 Step B 的 drift 累积**——有了时间序列才能判累积
+3. **最后做 Step C 的决策回溯**——需要 dreaming pass，等数据积累
+
+不要一次全做。Step A 跑 1-2 周积累数据后再上 Step B；Step B 跑稳后再上 Step C。
+
+### 何时触发
+
+- 任何对话里出现已被反复讨论的词（项目可维护高频词表，如 mewt 项目的 `head_up` / `bucket` / `oracle` / `viewpoint`）
+- `canonical-claim-compiler` 被路由时
+- concept 版本 bump 时（触发 Step C）
+- 用户说"这个概念我们之前讨论过"时
+
+### Concept Convergence 反模式
+
+- 主 agent 直接说"我懂 head_up"而不查演进版本——这是两周后还在原点的根因
+- 每次 drift 都立刻 fork——Kuhn 反常是正常的，累积到危机才处理
+- 把判飘交给 LLM 凭语义判断"用法是否一致"——循环论证，AI 是当事人
+- 概念版本变了自动降级所有引用旧版本的决策——必须重跑推论链
+- 演进曲线当装饰品——`drift_count >= 2` 且 `code_landed = false` 必须升级 badcase
+
 ## 路由流程
 
 ```mermaid
