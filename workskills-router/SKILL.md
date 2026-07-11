@@ -116,6 +116,8 @@ Router 层的 Loop 只是一套**思考方法和协作风格**，不是某个项
 7. **执行并记录**：每次运行或修改都要有 run_id/session_id/label；执行后分类 artifacts，追加 run log，更新 state。
 8. **复盘再思考**：写清本轮淘汰了什么旧猜想、哪个先验变强/变弱、哪个知识卡/文档需要回写、下一轮唯一问题是什么。
 
+跨 agent 的证据交接必须先物化到已确认共享的路径：项目证据用 workspace/repo evidence 目录，不入库临时包用 repo `.git/codex-*` scratch。agent-local `/tmp` 只能是工作缓存，不得成为 handoff pointer。maker 交付 `path + hash/manifest + read probe`，多文件 manifest 必须覆盖每个相对路径、字节数和 hash；共享性只能由 checker 在独立 context 里实际读取、校验后确认。路径不可读时是 evidence blocked，不是可以用 maker 摘要补齐的细节。
+
 可借鉴 `cobusgreyling/loop-engineering` 的运行骨架：L1 report-only 起步、持久状态、run log、readiness/audit、预算/kill switch、maker/checker 分离、必要时隔离工作区。router 只吸收这些作为 loop 方法，不把它们写死成项目模板。具体项目的权威事实、证据 gate、用户可见 claim 和因果链，必须由项目 skill 或项目文档承接。
 
 拓扑选择的通用规则：
