@@ -10,7 +10,18 @@
 
 ## 方法链
 
-整体实践不是一个 E2E skill：`clarification-tripwire` 处理会改变结果的语义歧义，`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决，`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
+整体实践不是一个 E2E skill：`clarification-tripwire` 处理会改变结果的语义歧义并独占中断协议，`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决，`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
+
+## Clarification Tripwire 中断协议
+
+`clarification-tripwire` 是 STOP / 恢复协议的唯一权威；`workskills-router` 与 calibration hooks 只负责检测、调用并服从它，不复制协议。
+
+本机 `/Users/kim/.codex/AGENTS.md` 另有全局强制入口：发现 material semantic ambiguity 时必须加载并服从该 skill。它只保证调用不会被跳过，不取代仓库中的协议真源。
+
+- **打断时刻**：两个合理解释会实质改变候选、标准、worker scope、写入/外部影响或最终结论时，在第一次语义承诺前打断；不得先淘汰候选、调用工具、fanout、写入或给出单一结论。
+- **STOP 动作**：冻结上述动作，只问一个会改变决策的最小问题，然后结束当前回合并等待。
+- **恢复条件**：只有用户选择某个解释、明确授权双轴/分支输出，或明确把选择权委托给 agent，才恢复执行；恢复后的语义契约必须进入直接执行和 worker prompts。
+- **查询边界**：STOP 前只允许有限只读查询来消除事实指代；查询和贝叶斯置信度不能替用户决定意图、价值、权限或优化目标。
 
 ## 概念收敛
 
@@ -25,7 +36,7 @@
 | 场景 | 入口 |
 |---|---|
 | 不知道该用哪个 skill | `workskills-router` |
-| 语义歧义会改变结果、结论、候选或行动 | `clarification-tripwire` |
+| 语义歧义会改变结果、结论、候选或行动；需要 STOP / 提问 / 恢复 | `clarification-tripwire` |
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | 在多个方案里挑/排序、"哪个更好/先做哪个/我喜欢/X好做" | `decision-tripwire` |
 | 思路乱了/想法太多/对话记录要收敛成一版范围、砍方案、各执一词 | `three-rulers` |
@@ -63,7 +74,7 @@
 
 ```text
 workskills-router/             # 统一入口和智能路由
-clarification-tripwire/        # 执行/结论/fanout 前的语义歧义断路器
+clarification-tripwire/        # 语义歧义断路器；独占 STOP / 冻结 / 提问 / 恢复协议
 problem-statement-card/        # 问题定义
 decision-tripwire/             # 决策起跳点警报器:物本位 vs 目的本位,逼出"赢的标准"
 three-rulers/                  # 三把尺:批量候选收敛,摊牌→立尺→过筛→停车场
