@@ -89,7 +89,7 @@ Router 只保留 `issue → internal/external intake → candidates/evidence upd
 
 | Skill | 负责 | 不负责 |
 |---|---|---|
-| clarification-tripwire（仅当前环境可用时） | 执行或 fanout 前识别会实质改变结果/行动的语义分支，并分类 blocking/branchable/non_blocking | 不替用户关闭 user-owned semantics，不定义领域标准；不可用时明确报告边界并回退到 problem-statement-card |
+| clarification-tripwire（仅当前环境可用时） | 执行、fanout、material conclusion 或 delivered response 前识别会实质改变结果/行动的语义分支，并分类 blocking/branchable/non_blocking | 不替用户关闭 user-owned semantics，不定义领域标准；不可用时明确报告边界并回退到 problem-statement-card |
 | problem-statement-card | 稳定问题、目标、信号和边界 | 不替代取证或实现 |
 | decision-tripwire | 单点决策前锁对象、动作与赢的标准 | 不替用户拍板；不可用时不得伪调用 |
 | three-rulers | 多候选收敛、立尺、分类与停车场 | 不处理未立标准的单点取舍 |

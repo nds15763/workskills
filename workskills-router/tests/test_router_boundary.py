@@ -336,6 +336,18 @@ class RouterBoundaryTest(unittest.TestCase):
             "outcome or action to clarification-tripwire",
         )
 
+        responsibility_rows = [
+            row.casefold()
+            for block in self.table_blocks
+            if "skill" in block[0].casefold() and "负责" in block[0]
+            for row in block[2:]
+            if "clarification-tripwire" in row.casefold()
+        ]
+        self.assertTrue(responsibility_rows, "missing clarification-tripwire responsibility row")
+        responsibility = "\n".join(responsibility_rows)
+        self.assertIn("material conclusion", responsibility)
+        self.assertIn("delivered response", responsibility)
+
         pre_action_contract = any(
             "clarification-tripwire" in paragraph
             and any(term in paragraph for term in ("歧义", "ambiguity"))

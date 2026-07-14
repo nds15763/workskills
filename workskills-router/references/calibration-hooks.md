@@ -16,7 +16,7 @@
 
 - **输入**：主 agent 准备扇出的子任务 prompt 列表。
 - **拦截条件**：存在语义歧义，即两个合理解释会实质改变结果、候选范围、worker scope 或行动；或子任务 prompt 里出现"应该 / 更好 / 高级 / 自然 / 有趣 / 克制 / 正确方向"等价值词。
-- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire` 分类：blocking 时提一个问题并暂停等待，branchable 时显式保留分支，non_blocking 仅限低成本、可逆且不改变结果的假设，clear 时直接继续。fanout 只冻结已确认事实，保留未确认语义变量；每个 worker 必须在独立轴上评估每个保留分支，不得把猜测解释写进所有 worker prompt。
+- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire` 分类：blocking 时提一个问题并暂停等待，branchable 时显式保留分支，non_blocking 仅限低成本、可逆且不改变结果的假设，clear 时直接继续。fanout 只冻结已确认事实；每个 worker prompt 必须暴露未决语义变量，fanout 整体覆盖每个保留分支并写明 branch ownership。每个保留分支默认只有一个 owner；仅显式声明的 independent verification lane 允许重复 ownership。不得把猜测解释写进所有 worker prompt。
 - **价值词动作**：价值词本身只触发 `say-show-boundary` 剥层，不因出现价值词而强制调用 `clarification-tripwire`；只有剥层后仍存在 material semantic ambiguity 才升级到歧义动作。
 
 ### 3. subtask exec（子任务执行之前）
