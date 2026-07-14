@@ -84,6 +84,103 @@ class ClarificationTripwireContractTest(unittest.TestCase):
             "values, permission, and optimization targets for the user: " + ", ".join(missing),
         )
 
+    def test_interrupts_at_first_semantic_commitment_point(self) -> None:
+        matching = self.fragments_with("first semantic commitment point")
+        self.assertTrue(
+            matching,
+            "Tripwire must name the first semantic commitment point as the interrupt boundary",
+        )
+        required_surfaces = {
+            "candidate exclusion": (
+                "candidate exclusion",
+                "candidate elimination",
+                "eliminate candidates",
+                "排除候选",
+            ),
+            "fanout": ("fanout",),
+            "write": ("write", "写入"),
+            "material conclusion": ("material conclusion",),
+            "delivered response": ("delivered response",),
+        }
+        missing = [
+            label
+            for label, alternatives in required_surfaces.items()
+            if not any(
+                any(term in fragment for term in alternatives)
+                for fragment in matching
+            )
+        ]
+        self.assertFalse(
+            missing,
+            "Tripwire must stop at the first semantic commitment point before every "
+            "consequential surface; missing: " + ", ".join(missing),
+        )
+
+    def test_stop_freezes_actions_except_bounded_factual_lookup(self) -> None:
+        stop_freeze = bool(
+            re.search(
+                r"(?:\bstop\b[^.\n]{0,120}(?:freez|冻结)|(?:freez|冻结)[^.\n]{0,120}\bstop\b)",
+                self.folded,
+            )
+        )
+        consequential_surfaces = {
+            "candidate exclusion": (
+                "candidate exclusion",
+                "candidate elimination",
+                "eliminate candidates",
+                "排除候选",
+            ),
+            "fanout": ("fanout",),
+            "write": ("write", "写入"),
+            "material conclusion": ("material conclusion",),
+            "delivered response": ("delivered response",),
+        }
+        missing_surfaces = [
+            label
+            for label, alternatives in consequential_surfaces.items()
+            if not any(term in self.folded for term in alternatives)
+        ]
+        lookup_is_only_exception = bool(
+            re.search(
+                r"(?:only|唯一)[^.\n]{0,100}bounded read-only lookup"
+                r"|bounded read-only lookup[^.\n]{0,100}(?:only|唯一)[^.\n]{0,40}(?:exception|例外)",
+                self.folded,
+            )
+        )
+        problems: list[str] = []
+        if not stop_freeze:
+            problems.append("STOP does not explicitly freeze consequential actions")
+        if missing_surfaces:
+            problems.append("missing frozen surfaces: " + ", ".join(missing_surfaces))
+        if not lookup_is_only_exception:
+            problems.append("bounded factual lookup is not the explicit sole STOP exception")
+        self.assertFalse(problems, "incomplete STOP protocol:\n" + "\n".join(problems))
+
+    def test_resume_requires_user_owned_resolution(self) -> None:
+        resume_fragments = self.fragments_with("resume")
+        context = "\n".join(resume_fragments)
+        requirements = {
+            "resume-only gate": ("resume only", "only resume", "仅在", "只有"),
+            "user chooses": ("user chooses", "user selects", "用户选择", "用户选定"),
+            "explicit branch authorization": (
+                "explicitly authorizes branches",
+                "explicitly authorizes a branched",
+                "明确授权分支",
+                "明确授权双轴",
+            ),
+            "delegated choice": ("delegates the choice", "delegates choice", "委托选择", "授权代选"),
+        }
+        missing = [
+            label
+            for label, alternatives in requirements.items()
+            if not any(term in context for term in alternatives)
+        ]
+        self.assertFalse(
+            missing,
+            "Tripwire may resume only after a user-owned resolution; missing: "
+            + ", ".join(missing),
+        )
+
     def test_clear_disposition_avoids_forced_clarification(self) -> None:
         matching = self.fragments_with("clear")
         self.assertTrue(

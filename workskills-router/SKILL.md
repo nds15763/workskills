@@ -31,7 +31,9 @@ description: >-
 
 对象、动作或标准仍漂移时，先路由到问题定义、概念编译或决策校准，不得直接执行。
 
-**No silent semantic collapse**：若语义歧义存在两个合理解释，并会实质改变结果或行动，在执行或 fanout 前先路由到 clarification-tripwire（仅当前环境可用时）；不可用时明确报告能力边界，并回退到已安装/可用的 problem-statement-card 锁定解释分支。不得用最可能、最常见或贝叶斯置信度替用户关闭语义。fanout 只冻结已确认事实，并保留未确认或未决语义变量，禁止冻结模型猜出的解释。
+**No silent semantic collapse**：若语义歧义存在两个合理解释，并会实质改变结果或行动，在执行或 fanout 前先路由到 clarification-tripwire（仅当前环境可用时），并服从它返回的 disposition 与 Interrupt Protocol；不可用时明确报告能力边界，并回退到已安装/可用的 problem-statement-card 锁定解释分支。不得用最可能、最常见或贝叶斯置信度替用户关闭语义。
+
+fanout 输入只冻结已确认事实，并保留未确认或未决语义变量；不得把模型猜出的解释升级为共享事实。
 
 ### 六条硬边界
 
@@ -67,7 +69,7 @@ Router 只保留 `issue → internal/external intake → candidates/evidence upd
 
 | 用户意图 / 症状 | 主 skill | 追加或回退条件 |
 |---|---|---|
-| 语义歧义存在两个合理解释，并会实质改变结果、结论或行动 | clarification-tripwire（仅当前环境可用时） | 不可用时明确报告能力边界，回退到已安装/可用的 problem-statement-card；blocking 先问并等待；可无损并存时保留分支；低成本、可逆且不改变结果时才声明假设继续 |
+| 语义歧义存在两个合理解释，并会实质改变结果、结论或行动 | clarification-tripwire（仅当前环境可用时） | 可用时服从其 disposition 与 Interrupt Protocol；不可用时明确报告能力边界，回退到已安装/可用的 problem-statement-card |
 | 问题模糊、目标/成功信号不清、方案太多但还没立标准 | problem-statement-card | 需要证据态势时再加 problem-review-mapper |
 | 开放、低先例或跨域问题，寻找外部成熟解法或类似方案 | problem-review-mapper | 外部参考只改变先验、候选机制或下一验，不直接替目标证据判绿 |
 | 候选不少于 3 个，需要收敛、分组、砍范围或处理多方说法 | three-rulers | 先稳定 decision object/action/criteria；单点取舍不由它替用户拍板 |

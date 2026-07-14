@@ -107,6 +107,49 @@ class RouterBoundaryTest(unittest.TestCase):
             "SKILL.md must explicitly say the router does not replace downstream skills",
         )
 
+    def test_router_surfaces_point_to_tripwire_without_owning_interrupt_protocol(self) -> None:
+        surfaces = {
+            "workskills-router/SKILL.md": self.text,
+            "workskills-router/references/calibration-hooks.md": self.hooks_text,
+        }
+        pointer_patterns = (
+            r"(?:路由到|调用|加载|触发)[^。\n]{0,80}clarification-tripwire",
+            r"clarification-tripwire[^.\n]{0,80}(?:route|invoke|load|trigger)",
+        )
+        duplicated_action_patterns = {
+            "question/wait behavior": r"(?:先问|提(?:一个)?问题|暂停|等待|ask one|pause|wait)",
+            "freeze behavior": r"(?:冻结|freeze)[^。\n]{0,80}(?:事实|变量|fact|semantic)",
+            "branch behavior": r"(?:保留分支|双轴|branched output|preserv(?:e|ed) branch)",
+            "assume-and-continue behavior": r"(?:声明假设继续|结果不变的假设|assum(?:e|ption)[^.\n]{0,40}continue)",
+            "resume behavior": r"(?:\bresume\b|恢复执行|继续执行条件)",
+        }
+
+        problems: list[str] = []
+        for name, text in surfaces.items():
+            folded = text.casefold()
+            tripwire_context = "\n".join(
+                fragment
+                for fragment in re.split(r"\n\s*\n|\n", folded)
+                if "clarification-tripwire" in fragment
+            )
+            if not any(re.search(pattern, tripwire_context) for pattern in pointer_patterns):
+                problems.append(f"{name} does not point to clarification-tripwire")
+            duplicated = [
+                label
+                for label, pattern in duplicated_action_patterns.items()
+                if re.search(pattern, tripwire_context)
+            ]
+            if duplicated:
+                problems.append(
+                    f"{name} duplicates Tripwire protocol: " + ", ".join(duplicated)
+                )
+
+        self.assertFalse(
+            problems,
+            "router surfaces may route/trigger only; STOP and resume belong to "
+            "clarification-tripwire:\n" + "\n".join(problems),
+        )
+
     def test_evidence_form_is_project_decided_and_not_hardcoded(self) -> None:
         evidence_form_is_contextual = any(
             any(term in paragraph for term in ("证据形式", "证据形态", "evidence form"))

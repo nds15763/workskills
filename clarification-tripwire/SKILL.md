@@ -18,10 +18,21 @@ Treat divergence as material when it changes any of these:
 
 Before asking, a **bounded read-only lookup** may resolve factual reference ambiguity from supplied context or authoritative project defaults. Lookup must never infer **user-owned semantics**: intent, values, **permission**, or **optimization** targets. Bayesian confidence can rank factual hypotheses; it cannot close those user-owned variables. A high-confidence guess is still a guess when only the user can close the variable.
 
+## Interrupt Protocol
+
+The **first semantic commitment point** is the interrupt boundary: stop before candidate exclusion or candidate elimination, fanout, any write or external effect, a material conclusion, or a delivered response.
+
+For a blocking ambiguity:
+
+1. The **only pre-STOP exception** is a **bounded read-only lookup** for factual references. It must not infer user intent, value, permission, or optimization.
+2. Enter explicit **STOP** and **freeze** candidate exclusion/elimination, fanout, writes and external effects, material conclusions, and delivered responses.
+3. Ask **exactly one minimal, decision-changing question**. End the turn and wait.
+4. **Resume only** when the **user chooses** or selects an interpretation, **explicitly authorizes branches** or a dual axis, or **delegates the choice**. On resume, propagate the resolved semantic contract to direct execution and every worker prompt.
+
 ## Disposition
 
 - **clear**: There is **no material ambiguity** after the counterfactual check or bounded factual lookup. Continue **without asking**.
-- **blocking**: The interpretations produce materially different outcomes and cannot both be honored. After bounded factual lookup cannot resolve the reference, ask **one concise clarification question**, expose the relevant alternatives, then **pause and wait**. Do not execute, eliminate candidates, write, deliver a conclusion, or fan out past the ambiguous boundary.
+- **blocking**: The interpretations produce materially different outcomes and cannot both be honored. Enter STOP, ask exactly one minimal decision-changing question, end, and wait under the Interrupt Protocol.
 - **branchable**: The user authorizes a dual-axis or branched output, and both interpretations can be preserved without loss. Keep both branches explicit and continue; do not merge one branch into the other.
 - **non_blocking**: The detail is cheap, reversible, and outcome-invariant. State the assumption and continue. If changing the assumption could alter the conclusion, candidate set, worker scope, or side effect, it is not non_blocking.
 

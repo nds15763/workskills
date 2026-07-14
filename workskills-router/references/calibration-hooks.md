@@ -16,21 +16,21 @@
 
 - **输入**：主 agent 准备扇出的子任务 prompt 列表。
 - **拦截条件**：存在语义歧义，即两个合理解释会实质改变结果、候选范围、worker scope 或行动；或子任务 prompt 里出现"应该 / 更好 / 高级 / 自然 / 有趣 / 克制 / 正确方向"等价值词。
-- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire` 分类：blocking 时提一个问题并暂停等待，branchable 时显式保留分支，non_blocking 仅限低成本、可逆且不改变结果的假设，clear 时直接继续。fanout 只冻结已确认事实；每个 worker prompt 必须暴露未决语义变量，fanout 整体覆盖每个保留分支并写明 branch ownership。每个保留分支默认只有一个 owner；仅显式声明的 independent verification lane 允许重复 ownership。不得把猜测解释写进所有 worker prompt。
+- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire`，并服从它返回的 disposition 与 Interrupt Protocol。
 - **价值词动作**：价值词本身只触发 `say-show-boundary` 剥层，不因出现价值词而强制调用 `clarification-tripwire`；只有剥层后仍存在 material semantic ambiguity 才升级到歧义动作。
 
 ### 3. subtask exec（子任务执行之前）
 
 - **输入**：子任务 prompt + 上下文片段。
 - **拦截条件**：仍有会实质改变执行结果、行动、写入或外部影响的语义歧义；或上下文里有未通过 SourceCheck 的 claim，或有未带 `claim_type` 的 source。
-- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire`；blocking 时不得执行，提一个问题并暂停等待，branchable 时保留分支，non_blocking 时声明低成本、可逆且结果不变的假设，clear 时直接继续。
+- **歧义动作**：只有 material semantic ambiguity 才先调用 `clarification-tripwire`，并服从它返回的 disposition 与 Interrupt Protocol。
 - **知识动作**：SourceCheck 或 `claim_type` 缺口本身只触发 `project-knowledge-curator` 标 `claim_type`（fact/rule/inference/value/taste/vision/decision）和 `knowledge_color`，不强制调用 `clarification-tripwire`。
 
 ### 4. pre-execution（主 agent 直接执行之前）
 
 - **输入**：主 agent 即将直接执行的行动、写入、material conclusion 或 delivered response。
 - **拦截条件**：存在两个合理语义解释，并且不同解释会实质改变结果、行动或用户收到的回答。
-- **失败动作**：先调用 `clarification-tripwire`；可由 supplied context 或 authoritative project defaults 消除的事实指代，允许 bounded read-only lookup，但不得用查询、概率或默认值推断用户的 intent、value、permission 或 optimization target。blocking 时暂停并等待澄清，branchable 时显式保留分支，non_blocking 仅限低成本、可逆且结果不变的假设，clear 时不提问并继续。
+- **失败动作**：调用 `clarification-tripwire`，并服从它返回的 disposition 与 Interrupt Protocol。
 
 ### 5. pre-finish（标记任务完成之前）
 
