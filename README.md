@@ -3,20 +3,19 @@
 本仓库是一组本地协作 skills。真正给 agent 使用的统一入口是：
 
 - `workskills-router`
-- 安装位置：`/Users/kim/.trae-cn/skills/workskills-router`（软链到本仓库）
+- 安装位置：`/Users/kim/.codex/skills/workskills-router`（软链到本仓库）
 - 源目录：`/Users/kim/code/workskills/workskills-router`
 
 根 README 只给人快速浏览；不要把它当成 skill 入口。agent 需要路由时应加载 `workskills-router/SKILL.md`，再由它按需加载下游 skill。
 
 ## 方法链
 
-整体实践不是一个 E2E skill：`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决，`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
+整体实践不是一个 E2E skill：`clarification-tripwire` 处理会改变结果的语义歧义，`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决，`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
 
 ## 概念收敛
 
-防止"两周后还在原点"——同一概念反复被讨论但不收敛。由两个 skill 协同：
+防止"两周后还在原点"——同一概念反复被讨论但不收敛。概念演进由 `canonical-claim-compiler` 承载，router 只负责在需要时路由：
 
-- `workskills-router` 的 **Concept Convergence Process**（3 Step：Lookup → Track → Reindex）负责何时触发、何时升级 badcase、何时回溯决策
 - `canonical-claim-compiler` 的 **Concept Evolution Layer** 负责演进版 schema：版本化 + 时间厚度（Husserl）+ 视域融合（Gadamer）+ 硬核/保护带（Lakatos）+ drift 累积（Kuhn）+ 推论角色（Brandom 主轴）+ 客观落地 + 决策反向索引（Quine）+ stability_score
 
 演进曲线作为人的主观视角：漂的就是风险点，收敛的就是稳定点，不用读卡内容。
@@ -26,6 +25,7 @@
 | 场景 | 入口 |
 |---|---|
 | 不知道该用哪个 skill | `workskills-router` |
+| 语义歧义会改变结果、结论、候选或行动 | `clarification-tripwire` |
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | 在多个方案里挑/排序、"哪个更好/先做哪个/我喜欢/X好做" | `decision-tripwire` |
 | 思路乱了/想法太多/对话记录要收敛成一版范围、砍方案、各执一词 | `three-rulers` |
@@ -63,6 +63,7 @@
 
 ```text
 workskills-router/             # 统一入口和智能路由
+clarification-tripwire/        # 执行/结论/fanout 前的语义歧义断路器
 problem-statement-card/        # 问题定义
 decision-tripwire/             # 决策起跳点警报器:物本位 vs 目的本位,逼出"赢的标准"
 three-rulers/                  # 三把尺:批量候选收敛,摊牌→立尺→过筛→停车场
@@ -81,6 +82,7 @@ knowledge-card-qa/             # 快问快答 / 知识卡
 
 ```bash
 ln -s /Users/kim/code/workskills/workskills-router /Users/kim/.codex/skills/workskills-router
+ln -s /Users/kim/code/workskills/clarification-tripwire /Users/kim/.codex/skills/clarification-tripwire
 ```
 
 其他 skill 也可按同样方式链接到 `/Users/kim/.codex/skills/<skill-name>`。新增或修改 skill 后，重启或新开 Codex 会话最稳。
