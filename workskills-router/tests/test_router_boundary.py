@@ -50,6 +50,12 @@ class RouterBoundaryTest(unittest.TestCase):
             for paragraph in re.split(r"\n\s*\n", cls.text)
             if paragraph.strip()
         ]
+        loop_match = re.search(
+            r"(?ms)^### Loop 抽象方法\s*$\n(.*?)(?=^### |^## |\Z)",
+            cls.text,
+        )
+        cls.loop_text = loop_match.group(1) if loop_match else ""
+        cls.loop_folded = cls.loop_text.casefold()
 
     def test_skill_stays_within_line_budget(self) -> None:
         self.assertLessEqual(
@@ -63,8 +69,15 @@ class RouterBoundaryTest(unittest.TestCase):
             "/Users/",
             "mewt",
             "sidecar",
+            "STATE.md",
+            "LOOP.md",
             "run_id",
+            "sessionId",
             "session_id",
+            "Harness",
+            "openspec/changes",
+            "proposal.md",
+            "design.md",
             ".git/codex",
             "head_up",
             "crisis_threshold",
@@ -508,6 +521,83 @@ class RouterBoundaryTest(unittest.TestCase):
         self.assertFalse(
             missing,
             "missing cross-project semantic guard(s): " + ", ".join(missing),
+        )
+
+    def test_loop_classifies_execution_nodes_by_judgment_boundary(self) -> None:
+        self.assertTrue(self.loop_text, "missing abstract Loop method section")
+
+        required_roles = {
+            "deterministic executable check": (
+                r"(?:确定性|deterministic)[^。\n]{0,80}(?:代码|检查|check|executable)",
+                r"(?:代码|检查|check|executable)[^。\n]{0,80}(?:确定性|deterministic)",
+            ),
+            "agent judgment": (
+                r"(?:agent|智能体)[^。\n]{0,40}(?:判断|推理|judg|reason)",
+                r"(?:判断|推理|judg|reason)[^。\n]{0,40}(?:agent|智能体)",
+            ),
+            "independent or human gate": (
+                r"(?:独立|人工|human|independent)[^。\n]{0,50}(?:gate|门禁|校验|验证)",
+                r"(?:gate|门禁|校验|验证)[^。\n]{0,50}(?:独立|人工|human|independent)",
+            ),
+        }
+        missing = [
+            role
+            for role, patterns in required_roles.items()
+            if not any(re.search(pattern, self.loop_folded) for pattern in patterns)
+        ]
+        self.assertFalse(
+            missing,
+            "abstract Loop must classify workflow nodes by execution/judgment "
+            "boundary: " + ", ".join(missing),
+        )
+
+    def test_loop_requires_structured_failure_routing_not_blind_retry(self) -> None:
+        structured_failure_route = bool(
+            re.search(
+                r"(?:失败|failure)[^。\n]{0,100}"
+                r"(?:结构化|structured)[^。\n]{0,100}"
+                r"(?:路由|route|下一步|next)",
+                self.loop_folded,
+            )
+            or re.search(
+                r"(?:结构化|structured)[^。\n]{0,100}"
+                r"(?:失败|failure)[^。\n]{0,100}"
+                r"(?:路由|route|下一步|next)",
+                self.loop_folded,
+            )
+        )
+        blind_retry_is_forbidden = bool(
+            re.search(
+                r"(?:不得|禁止|不能|must not|never)[^。\n]{0,60}"
+                r"(?:盲目|blind)[^。\n]{0,30}(?:重试|retry|rerun)",
+                self.loop_folded,
+            )
+        )
+        self.assertTrue(
+            structured_failure_route and blind_retry_is_forbidden,
+            "generic Loop must emit a structured failure route and explicitly "
+            "forbid blind retry/rerun",
+        )
+
+    def test_executable_green_closes_only_declared_evidence_layer(self) -> None:
+        executable_green_is_scoped = bool(
+            re.search(
+                r"(?:可执行|executable|代码|check)[^。\n]{0,80}"
+                r"(?:green|通过)[^。\n]{0,80}"
+                r"(?:只|only)[^。\n]{0,40}(?:声明|declared)[^。\n]{0,30}"
+                r"(?:证据层|evidence layer|层)",
+                self.loop_folded,
+            )
+            or re.search(
+                r"(?:green|通过)[^。\n]{0,80}"
+                r"(?:只|only)[^。\n]{0,40}(?:声明|declared)[^。\n]{0,30}"
+                r"(?:证据层|evidence layer|层)",
+                self.loop_folded,
+            )
+        )
+        self.assertTrue(
+            executable_green_is_scoped,
+            "an executable green result must close only its declared evidence layer",
         )
 
 
