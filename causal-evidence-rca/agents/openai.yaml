@@ -1,0 +1,4 @@
+interface:
+  display_name: "Causal Evidence RCA"
+  short_description: "Turn RCA signals into bounded evidence"
+  default_prompt: "Use $causal-evidence-rca to investigate this incident without overstating causal proof."

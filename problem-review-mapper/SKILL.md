@@ -340,10 +340,13 @@ flowchart LR
 | 用户要求“哪些对，哪些不对” | 做裁决表，标证据等级 | 可调用 project-knowledge-curator |
 | 用户要求整理成文档和图 | 写 review 文档，维护索引 | 调用 project-wiki / curator writeback |
 | 发现错知识、旧知识污染上下文 | 执行降权、归档、替代真源 | 调用 project-knowledge-curator Repair Loop |
+| 诊断依赖时序 / 系统指标或依赖图，且需要候选因果结构、混杂校准、可区分 probe 或有界排查优先级 | 先保持证据态势图的 claim / gate / 混杂边界，再按需产出专项证据 | 可调用 `causal-evidence-rca` |
 
 调用 project-wiki 时，只用它做业务域、功能点、README、Knowledge Pack、Obsidian 索引的查询和回写。
 
 调用 project-knowledge-curator 时，只用它做 `knowledge-hit-detect`、三色知识、authority 分级、Conflict Verdict、Repair Loop 和索引健康检查。
+
+`causal-evidence-rca` 是本 skill 的可选下游证据生产器，只适用于上述指标或依赖图诊断。它提供候选结构、经混杂校准的证据、区分性 probe 和有界优先级；其排序或任何算法输出都不能单独确认根因或关闭 root-cause gate。
 
 ## 多 agent 扇出模板
 
