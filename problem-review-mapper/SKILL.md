@@ -257,9 +257,29 @@ evidence:
       - hypothesis: h1
         relation: "supports | contradicts | no_update"
         lr_bucket: "-- | - | 0 | + | ++"
+        reason_audit:
+          case_fit: "pass | fail | unknown"
+          case_fit_reason: "当前对象、时间窗、测量口径为何适用或不适用"
+          positive_fit: "strong | weak | unknown"
+          positive_reason: "该 E 在 H 为真时为何应出现"
+          contrast_fit: "strong | weak | none | unknown"
+          contrast_reason: "该 E 相对竞争 H 的区分情况"
+          scope: "本次对象 / 时间窗 / 测量口径"
+          confounder_refs: ["c1"]
+          verdict: "valid_update | invalid | cannot_confirm"
       - hypothesis: h2
         relation: "supports | contradicts | no_update"
         lr_bucket: "-- | - | 0 | + | ++"
+        reason_audit:
+          case_fit: "pass | fail | unknown"
+          case_fit_reason: "当前对象、时间窗、测量口径为何适用或不适用"
+          positive_fit: "strong | weak | unknown"
+          positive_reason: "该 E 在 H 为真时为何应出现"
+          contrast_fit: "strong | weak | none | unknown"
+          contrast_reason: "该 E 相对竞争 H 的区分情况"
+          scope: "本次对象 / 时间窗 / 测量口径"
+          confounder_refs: ["c1"]
+          verdict: "valid_update | invalid | cannot_confirm"
 
 confounders:
   - id: c1
@@ -275,6 +295,34 @@ gaps:
     expected_split: ["h1", "h2"]
     owner: "<agent / human / tool>"
 ```
+
+## 论因审计（因明 lens）
+
+### 触发范围
+
+只在 review、排查、归因、claim 裁决中，对关键 `E → H` 理由边做审计；只有列入关键 `E → H` 的 `updates` 项才强制审计，其余证据更新不强制。它不是所有 thinking 的全局流程，普通编码、翻译、机械任务不触发；检查的是理由是否真的属于当前对象，不把因明三相写成绝对的频率断言。
+
+每个关键 `updates` 项嵌入 `reason_audit`：
+
+- `case_fit` / `case_fit_reason`：E 是否适用于当前对象、时间窗和测量口径，以及判断理由。
+- `positive_fit` / `positive_reason`：若 H 为真，E 出现的强度和理由。
+- `contrast_fit` / `contrast_reason`：E 相对竞争 H 的区分强度和理由。
+- `scope`、`confounder_refs`：锁定本次比较范围，并指向已知污染路径。
+- `verdict`：只更新 H，不关闭 claim / gate；claim/gate 仍按其 own truth/evidence gate 裁决。
+
+组合约束：
+
+- `verdict 优先级：invalid > cannot_confirm > valid_update`。
+- `case_fit=fail 无论其他字段为何，verdict=invalid`；先于所有 `none` / `unknown` 规则。
+- `case_fit=fail => verdict=invalid => relation=no_update, lr_bucket=0`。
+- `任一 fit=unknown（且未先命中 case_fit=fail）=> verdict=cannot_confirm => relation=no_update, lr_bucket=0`。
+- `contrast_fit=none => verdict=cannot_confirm => relation=no_update, lr_bucket=0`。
+- `contrast_fit=none 的优先级低于 invalid`。`反例：case_fit=fail + contrast_fit=none => verdict=invalid`，不得降成 `cannot_confirm`。
+- `relation=supports 只能使用 lr_bucket=+ / ++`。
+- `relation=contradicts 只能使用 lr_bucket=- / --`。
+- `relation=no_update 只能使用 lr_bucket=0`。
+
+概率证据不要求所有同类必现或所有异类必无；重点是本次 E→H 理由边的适用性和区分力。代理或外部相似案例不能替当前对象的 target evidence，只能作为 prior、候选机制或下一验线索。
 
 输出要求：
 

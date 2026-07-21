@@ -10,7 +10,7 @@
 
 ## 方法链
 
-整体实践不是一个 E2E skill：`clarification-tripwire` 处理会改变结果的语义歧义并独占中断协议，`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 做多猜想裁决；仅在时序 / 系统指标或依赖图诊断需要候选因果结构、混杂校准、区分性 probe 或有界排查优先级时，才由它下游调用 `causal-evidence-rca` 产出专项证据。`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
+整体实践不是一个 E2E skill：`clarification-tripwire` 处理会改变结果的语义歧义并独占中断协议，`problem-statement-card` 定问题，`canonical-claim-compiler` 对齐概念/claim，`stage-evidence-gate` 做跨语言证据门，`problem-review-mapper` 只在 review / 排查 / 归因 / claim 裁决中做多猜想裁决；对关键 `E → H` 理由边检查当前 case fit、positive fit 与 contrast fit，只更新 H，不把概率绝对化，也不关闭 claim / gate。代理或外部相似案例不能替当前对象的 target evidence，只能更新 prior、候选机制或下一验。它不是所有 thinking 的流程，普通编码、翻译和机械任务不触发；仅在时序 / 系统指标或依赖图诊断需要候选因果结构、混杂校准、区分性 probe 或有界排查优先级时，才由它下游调用 `causal-evidence-rca` 产出专项证据。`truth-condition-checker` / `say-show-boundary` 拆真值和边界，`knowledge-card-qa` 做人话沉淀。
 
 ## Clarification Tripwire 中断协议
 
@@ -40,7 +40,8 @@
 | 问题模糊、方案太多、需要先定义问题 | `problem-statement-card` |
 | 在多个方案里挑/排序、"哪个更好/先做哪个/我喜欢/X好做" | `decision-tripwire` |
 | 思路乱了/想法太多/对话记录要收敛成一版范围、砍方案、各执一词 | `three-rulers` |
-| review、排查、复盘、归因、真因、多猜想竞争、画证据态势图 | `problem-review-mapper` |
+| review、排查、复盘、归因、真因、多猜想竞争、多猜想 / 证据态势中的 claim 裁决，或画含关键 `E → H` 论因审计的证据态势图 | `problem-review-mapper` |
+| 单条 claim / gate / decision 是否成立、反例或反向证伪 | `truth-condition-checker` |
 | 时序 / 系统指标或依赖图诊断，需要候选因果结构、混杂校准、区分性 probe 或有界排查优先级 | `problem-review-mapper` → `causal-evidence-rca`（专项证据；不单独确认根因） |
 | 多步链路或 E2E 结果需要说明“到底证明了什么”，用户表象语言要对齐到共通概念和本轮证据面 | `stage-evidence-gate` |
 | PRD/设计稿/LLM总结 需要先统一术语、concept、claim、drift | `canonical-claim-compiler` |
@@ -66,7 +67,7 @@
 
 | 图型 | 用在什么时候 | 入口 |
 |---|---|---|
-| 证据态势图 | 原因不明、多猜想竞争、需要看证据如何更新判断 | `problem-review-mapper` |
+| 证据态势图 | 原因不明、多猜想竞争、需要看证据如何更新判断；关键 `E → H` 边附 reason audit | `problem-review-mapper` |
 | 流程放射图 | 材料很多但主要问题是顺序、阶段和细节挂载 | `problem-review-mapper` |
 | 真值依赖图 | 单条 claim / gate / decision 是否成立、需要反向证伪 | `truth-condition-checker` |
 | roadmap runtime group | 长任务、挂起调研、执行闭环和状态颜色推进 | `project-roadmap-board` |
@@ -79,7 +80,7 @@ clarification-tripwire/        # 语义歧义断路器；独占 STOP / 冻结 / 
 problem-statement-card/        # 问题定义
 decision-tripwire/             # 决策起跳点警报器:物本位 vs 目的本位,逼出"赢的标准"
 three-rulers/                  # 三把尺:批量候选收敛,摊牌→立尺→过筛→停车场
-problem-review-mapper/         # 图优先 review / 排查 / 复盘；判断态势用证据态势图，讲顺序用流程放射图
+problem-review-mapper/         # 图优先 review / 排查 / 复盘 / claim 裁决；关键 E→H 在证据态势图内做论因审计，不另设 skill
 causal-evidence-rca/           # problem-review-mapper 的可选下游专项证据生产器：时序 / 系统指标或依赖图的因果 RCA；不定义 Router 或项目证据政策
 stage-evidence-gate/           # 多步链路证据门：用户现象->共通概念/claim->本轮证据面，区分目标证据、代理证据和缺口
 canonical-claim-compiler/      # PRD/自然语言 -> concept_id / claim_id / canonical / drift
@@ -94,8 +95,35 @@ knowledge-card-qa/             # 快问快答 / 知识卡
 本机当前采用 symlink 安装，便于直接使用源目录更新：
 
 ```bash
-ln -s /Users/kim/code/workskills/workskills-router /Users/kim/.codex/skills/workskills-router
-ln -s /Users/kim/code/workskills/clarification-tripwire /Users/kim/.codex/skills/clarification-tripwire
+install_skill_link() {
+  src=$1
+  dst=$2
+
+  if [ ! -d "$src" ] || [ ! -r "$src/SKILL.md" ]; then
+    printf 'invalid source: %s must be a directory with readable SKILL.md\n' "$src" >&2
+    return 1
+  fi
+
+  if [ -L "$dst" ]; then
+    current=$(readlink "$dst")
+    if [ "$current" = "$src" ]; then
+      return 0
+    fi
+    printf 'conflict: %s -> %s (expected %s)\n' "$dst" "$current" "$src" >&2
+    return 1
+  fi
+
+  if [ -e "$dst" ]; then
+    printf 'conflict: %s exists and is not a symlink\n' "$dst" >&2
+    return 1
+  fi
+
+  ln -s "$src" "$dst"
+}
+
+install_skill_link /Users/kim/code/workskills/workskills-router /Users/kim/.codex/skills/workskills-router || exit 1
+install_skill_link /Users/kim/code/workskills/clarification-tripwire /Users/kim/.codex/skills/clarification-tripwire || exit 1
+install_skill_link /Users/kim/code/workskills/problem-review-mapper /Users/kim/.codex/skills/problem-review-mapper || exit 1
 ```
 
-其他 skill 也可按同样方式链接到 `/Users/kim/.codex/skills/<skill-name>`。新增或修改 skill 后，重启或新开 Codex 会话最稳。
+论因审计随 `problem-review-mapper` 安装，不是独立 skill。其他 skill 也可按同样方式链接到 `/Users/kim/.codex/skills/<skill-name>`。新增或修改 skill 后，重启或新开 Codex 会话最稳。
